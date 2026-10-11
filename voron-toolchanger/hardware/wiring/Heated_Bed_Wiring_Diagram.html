@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voron 2.4 350mm — Heated Bed Power Wiring Diagram (Based on Kraken V1.0 Official Pinout)</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --red: #f85149;
+    --orange: #d29922;
+    --green: #3fb950;
+    --purple: #bc8cff;
+    --yellow: #e3b341;
+    --cyan: #39d2c0;
+    --pink: #f778ba;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+    line-height: 1.6;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.8em;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, var(--red), var(--orange));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    margin-bottom: 30px;
+    font-size: 0.95em;
+  }
+  .warning-banner {
+    background: linear-gradient(135deg, #3d1a1a, #2d1f0f);
+    border: 2px solid var(--red);
+    border-radius: 12px;
+    padding: 18px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .warning-banner .icon { font-size: 2em; flex-shrink: 0; }
+  .warning-banner .title { color: var(--red); font-weight: 700; font-size: 1.1em; margin-bottom: 4px; }
+  .warning-banner .desc { color: #f0a0a0; font-size: 0.9em; line-height: 1.7; }
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-size: 1.25em;
+    font-weight: 700;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title .icon { margin-right: 8px; }
+  .diagram-container { width: 100%; overflow-x: auto; margin: 10px 0; }
+  .diagram-container svg { display: block; margin: 0 auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+  th {
+    background: #21262d;
+    color: var(--accent);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: rgba(88,166,255,0.05); }
+  .pin { color: var(--cyan); font-family: 'Consolas', monospace; font-weight: 600; }
+  .label-ac { color: var(--red); font-weight: 700; }
+  .label-dc { color: var(--green); font-weight: 700; }
+  .label-sensor { color: var(--purple); font-weight: 700; }
+  .label-safety { color: var(--orange); font-weight: 700; }
+  .parts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .part-card {
+    background: #21262d;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+  }
+  .part-card .part-name { font-weight: 700; font-size: 1em; margin-bottom: 6px; }
+  .part-card .part-spec { color: var(--text-dim); font-size: 0.85em; line-height: 1.6; }
+  .part-card .part-spec strong { color: var(--text); }
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.92em;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .check-icon { flex-shrink: 0; width: 22px; text-align: center; }
+  .check-danger { color: var(--red); }
+  .check-warn { color: var(--orange); }
+  .check-ok { color: var(--green); }
+  .connector-box {
+    display: inline-block;
+    background: #0d1117;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin: 10px 0;
+    text-align: center;
+  }
+  .connector-box .conn-title {
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-size: 0.95em;
+  }
+  .connector-box .conn-pins { display: flex; gap: 16px; justify-content: center; }
+  .conn-pin { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .conn-pin .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; }
+  .conn-pin .dot.red { border-color: var(--red); background: rgba(248,81,73,0.3); }
+  .conn-pin .dot.black { border-color: #666; background: rgba(100,100,100,0.3); }
+  .conn-pin .dot.blue { border-color: var(--accent); background: rgba(88,166,255,0.3); }
+  .conn-pin .dot.green { border-color: var(--green); background: rgba(63,185,80,0.3); }
+  .conn-pin .dot.yellow { border-color: var(--yellow); background: rgba(227,179,65,0.3); }
+  .conn-pin .pin-label { font-size: 0.75em; color: var(--text-dim); }
+  .step-list { counter-reset: step; list-style: none; padding: 0; }
+  .step-list li {
+    counter-increment: step;
+    padding: 12px 0 12px 50px;
+    position: relative;
+    border-bottom: 1px solid rgba(48,54,61,0.4);
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-list li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 12px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(88,166,255,0.15);
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9em;
+  }
+  .step-list li .step-title { font-weight: 700; margin-bottom: 4px; }
+  .step-list li .step-desc { color: var(--text-dim); font-size: 0.88em; }
+  .note-box {
+    background: rgba(88,166,255,0.08);
+    border-left: 4px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 0.9em;
+  }
+  .note-box.danger { background: rgba(248,81,73,0.08); border-left-color: var(--red); }
+  .note-box .note-title { font-weight: 700; margin-bottom: 4px; }
+  .config-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    font-size: 0.85em;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+    white-space: pre;
+  }
+  .cfg-section { color: var(--accent); font-weight: 700; }
+  .cfg-key { color: var(--cyan); }
+  .cfg-value { color: var(--green); }
+  .cfg-comment { color: var(--text-dim); }
+  .footer {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.8em;
+    margin-top: 30px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  /* Name change highlight */
+  .name-change {
+    background: rgba(210,153,34,0.15);
+    border: 1px solid rgba(210,153,34,0.4);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Consolas', monospace;
+    font-weight: 700;
+  }
+  .old-name { color: #f85149; text-decoration: line-through; }
+  .new-name { color: var(--green); }
+</style>
+</head>
+<body>
+
+<h1>⚡ Heated Bed Power Wiring Diagram</h1>
+<p class="subtitle">Voron 2.4 350mm AWD — BTT Kraken V1.0 Official Pinout + AC SSR + Keenovo 220V 600W</p>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Warning Banner -->
+<!-- ════════════════════════════════════════ -->
+<div class="warning-banner">
+  <span class="icon">⚠️</span>
+  <div>
+    <div class="title">High Voltage (AC 220V) Warning — Risk of Electric Shock and Fire</div>
+    <div class="desc">
+      This wiring involves AC 220V mains power. Always disconnect mains power before working.<br>
+      If you are not confident in electrical work, consult a licensed electrician. Never omit the protective earth (PE) grounding connection.<br>
+      Use heat-resistant silicone wire of <strong>14AWG (2.0mm²) or thicker</strong> for all AC wiring.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 0. Official Pinout Name Changes -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">📋</span> Kraken V1.0 Official Pin Names (Changes from Previous Wiring Diagrams)</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Previous Name</th>
+        <th>Official Name</th>
+        <th>Pin</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="old-name">HE-BED</span></td>
+        <td><span class="new-name name-change">BED-OUT</span></td>
+        <td class="pin">PF5 + VIN</td>
+        <td>Bed heater MOSFET output (2-pin screw terminal)</td>
+      </tr>
+      <tr>
+        <td><span class="old-name">TB</span></td>
+        <td><span class="new-name name-change">THB</span></td>
+        <td class="pin">PB0 + GND</td>
+        <td>Bed thermistor input (2-pin JST)</td>
+      </tr>
+      <tr>
+        <td><span class="text-dim">—</span></td>
+        <td><span class="new-name name-change">BED-POWER</span></td>
+        <td class="pin">VIN + GND (12-24V)</td>
+        <td>Dedicated bed power input (separate from POWER)</td>
+      </tr>
+      <tr>
+        <td><span class="text-dim">—</span></td>
+        <td><span class="new-name name-change">MOTOR-POWER</span></td>
+        <td class="pin">VIN + GND + HV (24-60V)</td>
+        <td>Dedicated motor power input (48V PSU)</td>
+      </tr>
+      <tr>
+        <td><span class="text-dim">—</span></td>
+        <td><span class="new-name name-change">POWER</span></td>
+        <td class="pin">VIN + GND (12-24V)</td>
+        <td>Main logic power input (24V PSU)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note-box" style="margin-top:16px;">
+    <div class="note-title">⚡ BED-OUT Pin Configuration — Important difference from earlier documentation!</div>
+    In the official pinout, BED-OUT consists of <strong>VIN</strong> (constant power supplied from BED-POWER) and <strong>PF5</strong> (MOSFET low-side switched GND).<br>
+    That is, when PF5 is ON, it connects to GND, allowing current to flow.<br>
+    <strong>SSR Connection: BED-OUT VIN → SSR DC(+) / BED-OUT PF5 → SSR DC(-)</strong>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 1. Full Wiring Diagram (SVG) — 3 PSU Architecture -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">📐</span> Complete Wiring Diagram (AC 220V + 3 PSUs + Kraken Official Pinout)</div>
+  <div class="diagram-container">
+    <svg viewBox="0 0 1060 780" width="1060" height="780" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+      <defs>
+        <marker id="arr-red" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#f85149"/>
+        </marker>
+        <marker id="arr-green" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#3fb950"/>
+        </marker>
+        <marker id="arr-purple" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#bc8cff"/>
+        </marker>
+        <marker id="arr-orange" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#d29922"/>
+        </marker>
+        <marker id="arr-blue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#58a6ff"/>
+        </marker>
+      </defs>
+
+      <rect width="1060" height="780" rx="12" fill="#0d1117"/>
+
+      <!-- Title -->
+      <text x="530" y="25" text-anchor="middle" fill="#8b949e" font-size="12">AC 220V (Red/Blue) | DC 24V BED-OUT (Green) | Thermistor THB (Purple) | Safety (Orange) | PSU DC (Cyan)</text>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- AC Inlet -->
+      <!-- ══════════════════════════════════ -->
+      <rect x="20" y="50" width="130" height="90" rx="10" fill="#2d1a1a" stroke="#f85149" stroke-width="2"/>
+      <text x="85" y="75" text-anchor="middle" fill="#f85149" font-weight="700" font-size="14">AC Inlet</text>
+      <text x="85" y="95" text-anchor="middle" fill="#f0a0a0" font-size="11">220V / 50-60Hz</text>
+      <text x="85" y="113" text-anchor="middle" fill="#f0a0a0" font-size="10">L / N / PE (3-Pin)</text>
+      <text x="85" y="130" text-anchor="middle" fill="#b0903a" font-size="9">IEC C14 + Integrated Fuse</text>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- Wago 221 AC Distribution -->
+      <!-- ══════════════════════════════════ -->
+      <rect x="200" y="40" width="160" height="200" rx="10" fill="#1f1a0f" stroke="#d29922" stroke-width="2"/>
+      <text x="280" y="65" text-anchor="middle" fill="#d29922" font-weight="700" font-size="13">Wago 221 (5-Port x3)</text>
+      <text x="280" y="82" text-anchor="middle" fill="#b0903a" font-size="10">AC 220V Distribution Hub</text>
+
+      <!-- Wago L Rail -->
+      <rect x="215" y="95" width="130" height="32" rx="5" fill="rgba(248,81,73,0.1)" stroke="#f85149" stroke-width="1"/>
+      <text x="280" y="116" text-anchor="middle" fill="#f85149" font-size="11" font-weight="600">L Rail (Live Distribution)</text>
+
+      <!-- Wago N Rail -->
+      <rect x="215" y="135" width="130" height="32" rx="5" fill="rgba(68,136,255,0.1)" stroke="#4488ff" stroke-width="1"/>
+      <text x="280" y="156" text-anchor="middle" fill="#4488ff" font-size="11" font-weight="600">N Rail (Neutral Distribution)</text>
+
+      <!-- Wago PE Rail -->
+      <rect x="215" y="175" width="130" height="32" rx="5" fill="rgba(227,179,65,0.1)" stroke="#e3b341" stroke-width="1"/>
+      <text x="280" y="196" text-anchor="middle" fill="#e3b341" font-size="11" font-weight="600">PE Rail (Earth Ground)</text>
+
+      <!-- AC Inlet -> Wago -->
+      <line x1="150" y1="75" x2="205" y2="111" stroke="#f85149" stroke-width="2" marker-end="url(#arr-red)"/>
+      <line x1="150" y1="95" x2="205" y2="151" stroke="#4488ff" stroke-width="2" marker-end="url(#arr-blue)"/>
+      <line x1="150" y1="115" x2="205" y2="191" stroke="#e3b341" stroke-width="2" marker-end="url(#arr-orange)"/>
+      <text x="168" y="68" fill="#f85149" font-size="9" font-weight="600">L</text>
+      <text x="168" y="88" fill="#4488ff" font-size="9" font-weight="600">N</text>
+      <text x="168" y="122" fill="#e3b341" font-size="9" font-weight="600">PE</text>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- 3× PSU -->
+      <!-- ══════════════════════════════════ -->
+      <!-- 48V PSU -->
+      <rect x="420" y="40" width="130" height="55" rx="8" fill="#1a1a2d" stroke="#58a6ff" stroke-width="1.5"/>
+      <text x="485" y="60" text-anchor="middle" fill="#58a6ff" font-weight="700" font-size="12">48V PSU</text>
+      <text x="485" y="78" text-anchor="middle" fill="#8b949e" font-size="9">AC->DC 48V (Steppers)</text>
+      <text x="485" y="90" text-anchor="middle" fill="#58a6ff" font-size="8">→ MOTOR-POWER</text>
+
+      <!-- 24V PSU -->
+      <rect x="420" y="105" width="130" height="55" rx="8" fill="#1a2d1a" stroke="#3fb950" stroke-width="1.5"/>
+      <text x="485" y="125" text-anchor="middle" fill="#3fb950" font-weight="700" font-size="12">24V PSU</text>
+      <text x="485" y="143" text-anchor="middle" fill="#8b949e" font-size="9">AC->DC 24V (Logic+Bed)</text>
+      <text x="485" y="155" text-anchor="middle" fill="#3fb950" font-size="8">→ POWER + BED-POWER</text>
+
+      <!-- 5V PSU -->
+      <rect x="420" y="170" width="130" height="55" rx="8" fill="#2d1a2d" stroke="#bc8cff" stroke-width="1.5"/>
+      <text x="485" y="190" text-anchor="middle" fill="#bc8cff" font-weight="700" font-size="12">5V PSU</text>
+      <text x="485" y="208" text-anchor="middle" fill="#8b949e" font-size="9">AC->DC 5V (RPi5)</text>
+
+      <!-- Wago L → PSU AC inputs -->
+      <line x1="345" y1="111" x2="410" y2="68" stroke="#f85149" stroke-width="1.5" marker-end="url(#arr-red)"/>
+      <line x1="345" y1="111" x2="410" y2="133" stroke="#f85149" stroke-width="1.5" marker-end="url(#arr-red)"/>
+      <line x1="345" y1="111" x2="410" y2="198" stroke="#f85149" stroke-width="1.5" marker-end="url(#arr-red)"/>
+
+      <!-- Wago N → PSU AC inputs -->
+      <line x1="345" y1="151" x2="390" y2="78" stroke="#4488ff" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="345" y1="151" x2="390" y2="143" stroke="#4488ff" stroke-width="1" stroke-dasharray="3,2"/>
+      <line x1="345" y1="151" x2="390" y2="208" stroke="#4488ff" stroke-width="1" stroke-dasharray="3,2"/>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- SSR — Wago L 4th Port -->
+      <!-- ══════════════════════════════════ -->
+      <rect x="420" y="280" width="180" height="110" rx="12" fill="#1a2d1a" stroke="#3fb950" stroke-width="2"/>
+      <text x="510" y="305" text-anchor="middle" fill="#3fb950" font-weight="700" font-size="14">SSR (Solid State Relay)</text>
+      <text x="510" y="322" text-anchor="middle" fill="#8b949e" font-size="10">Omron G3NA-210B or SSR-40DA</text>
+
+      <!-- SSR Load Side -->
+      <rect x="435" y="335" width="68" height="42" rx="5" fill="rgba(248,81,73,0.1)" stroke="#f85149" stroke-width="1"/>
+      <text x="469" y="352" text-anchor="middle" fill="#f85149" font-size="9" font-weight="600">AC Load Side</text>
+      <text x="469" y="367" text-anchor="middle" fill="#f0a0a0" font-size="8">①L-IN ②L-OUT</text>
+
+      <!-- SSR Control Side -->
+      <rect x="515" y="335" width="72" height="42" rx="5" fill="rgba(63,185,80,0.1)" stroke="#3fb950" stroke-width="1"/>
+      <text x="551" y="352" text-anchor="middle" fill="#3fb950" font-size="9" font-weight="600">DC Control Side</text>
+      <text x="551" y="367" text-anchor="middle" fill="#a0e0a0" font-size="8">③DC+ ④DC-</text>
+
+      <!-- Wago L -> SSR (4th port, via fuse) -->
+      <line x1="345" y1="111" x2="370" y2="111" stroke="#f85149" stroke-width="2"/>
+      <line x1="370" y1="111" x2="370" y2="300" stroke="#f85149" stroke-width="2"/>
+
+      <!-- Dedicated Heated Bed Fuse -->
+      <rect x="350" y="290" width="50" height="24" rx="4" fill="#2d240f" stroke="#d29922" stroke-width="1.5"/>
+      <text x="375" y="306" text-anchor="middle" fill="#d29922" font-size="8" font-weight="600">10A Fuse</text>
+
+      <line x1="370" y1="314" x2="370" y2="356" stroke="#f85149" stroke-width="2"/>
+      <line x1="370" y1="356" x2="425" y2="356" stroke="#f85149" stroke-width="2" marker-end="url(#arr-red)"/>
+      <text x="395" y="348" fill="#f85149" font-size="8" font-weight="600">L→①</text>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- Thermal Fuse -->
+      <!-- ══════════════════════════════════ -->
+      <rect x="650" y="290" width="110" height="50" rx="8" fill="#2d240f" stroke="#d29922" stroke-width="1.5"/>
+      <text x="705" y="312" text-anchor="middle" fill="#d29922" font-weight="700" font-size="11">🌡 Thermal Fuse</text>
+      <text x="705" y="328" text-anchor="middle" fill="#b0903a" font-size="9">125°C / 10A / 250V</text>
+
+      <!-- SSR 2 L-OUT -> Thermal Fuse -->
+      <line x1="503" y1="356" x2="530" y2="356" stroke="#f85149" stroke-width="2"/>
+      <line x1="530" y1="356" x2="530" y2="315" stroke="#f85149" stroke-width="2"/>
+      <line x1="530" y1="315" x2="640" y2="315" stroke="#f85149" stroke-width="2" marker-end="url(#arr-red)"/>
+      <text x="585" y="308" text-anchor="middle" fill="#f85149" font-size="8" font-weight="600">②L-OUT -> Thermal Fuse</text>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- AC Heating Pad (Keenovo) -->
+      <!-- ══════════════════════════════════ -->
+      <rect x="350" y="440" width="420" height="140" rx="14" fill="#2d1a1a" stroke="#f85149" stroke-width="2.5"/>
+      <text x="560" y="470" text-anchor="middle" fill="#f85149" font-weight="700" font-size="16">AC Silicone Heater Mat (Keenovo 220V 600W)</text>
+      <text x="560" y="492" text-anchor="middle" fill="#f0a0a0" font-size="11">350 x 350mm Silicone Heater Mat — Mounted Under Aluminum Bed</text>
+
+      <!-- Wire Color Key -->
+      <rect x="380" y="505" width="160" height="22" rx="4" fill="rgba(255,255,255,0.08)" stroke="#888" stroke-width="1"/>
+      <text x="460" y="520" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Thick White Wires x2 = AC Mains (L+N)</text>
+      <rect x="380" y="533" width="160" height="22" rx="4" fill="rgba(248,81,73,0.1)" stroke="#f85149" stroke-width="1"/>
+      <text x="460" y="548" text-anchor="middle" fill="#f85149" font-size="9" font-weight="600">Thin Red Wires x2 = Thermistor</text>
+      <rect x="560" y="505" width="180" height="22" rx="4" fill="rgba(68,136,255,0.1)" stroke="#4488ff" stroke-width="1"/>
+      <text x="650" y="520" text-anchor="middle" fill="#4488ff" font-size="9" font-weight="600">Blue Wire + Ring Terminal = Earth (PE)</text>
+
+      <!-- Thermal Fuse -> Heater Mat -->
+      <line x1="705" y1="340" x2="705" y2="430" stroke="#f85149" stroke-width="2.5" marker-end="url(#arr-red)"/>
+      <text x="720" y="390" fill="#f85149" font-size="9" font-weight="600">L (White)</text>
+
+      <!-- Heater Mat N -> Wago N -->
+      <line x1="390" y1="580" x2="390" y2="620" stroke="#4488ff" stroke-width="2"/>
+      <line x1="390" y1="620" x2="140" y2="620" stroke="#4488ff" stroke-width="2"/>
+      <line x1="140" y1="620" x2="140" y2="151" stroke="#4488ff" stroke-width="2"/>
+      <line x1="140" y1="151" x2="205" y2="151" stroke="#4488ff" stroke-width="2" marker-end="url(#arr-blue)"/>
+      <text x="260" y="636" text-anchor="middle" fill="#4488ff" font-size="9" font-weight="600">N (White) -> Wago N Rail -> AC Inlet N Return</text>
+
+      <!-- Ground (Blue) -> Wago PE -->
+      <line x1="560" y1="580" x2="560" y2="650" stroke="#e3b341" stroke-width="2" stroke-dasharray="6,3"/>
+      <line x1="560" y1="650" x2="120" y2="650" stroke="#e3b341" stroke-width="2" stroke-dasharray="6,3"/>
+      <line x1="120" y1="650" x2="120" y2="191" stroke="#e3b341" stroke-width="2" stroke-dasharray="6,3"/>
+      <line x1="120" y1="191" x2="205" y2="191" stroke="#e3b341" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-orange)"/>
+      <text x="340" y="666" text-anchor="middle" fill="#e3b341" font-size="9" font-weight="600">PE (Blue + Ring Terminal) -> Wago PE Rail -> AC Inlet PE Return</text>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- BTT Kraken V1.0 -->
+      <!-- ══════════════════════════════════ -->
+      <rect x="800" y="380" width="240" height="280" rx="12" fill="#161b22" stroke="#f85149" stroke-width="2"/>
+      <rect x="800" y="380" width="240" height="32" rx="12" fill="#cc2222"/>
+      <text x="920" y="402" text-anchor="middle" fill="#fff" font-weight="700" font-size="14">BIGTREETECH KRAKEN</text>
+      <text x="920" y="428" text-anchor="middle" fill="#8b949e" font-size="10">STM32H723ZGT6 / V1.0 Official Pinout</text>
+
+      <!-- MOTOR-POWER -->
+      <rect x="815" y="442" width="95" height="36" rx="5" fill="rgba(88,166,255,0.08)" stroke="#58a6ff" stroke-width="1"/>
+      <text x="862" y="457" text-anchor="middle" fill="#58a6ff" font-weight="700" font-size="9">MOTOR-POWER</text>
+      <text x="862" y="471" text-anchor="middle" fill="#8b949e" font-size="8">VIN+GND+HV 24-60V</text>
+
+      <!-- POWER -->
+      <rect x="920" y="442" width="95" height="36" rx="5" fill="rgba(63,185,80,0.08)" stroke="#3fb950" stroke-width="1"/>
+      <text x="967" y="457" text-anchor="middle" fill="#3fb950" font-weight="700" font-size="9">POWER</text>
+      <text x="967" y="471" text-anchor="middle" fill="#8b949e" font-size="8">VIN+GND 12-24V</text>
+
+      <!-- BED-POWER -->
+      <rect x="815" y="490" width="95" height="36" rx="5" fill="rgba(63,185,80,0.12)" stroke="#3fb950" stroke-width="1.5"/>
+      <text x="862" y="505" text-anchor="middle" fill="#3fb950" font-weight="700" font-size="9">BED-POWER</text>
+      <text x="862" y="519" text-anchor="middle" fill="#8b949e" font-size="8">VIN+GND 12-24V</text>
+
+      <!-- BED-OUT -->
+      <rect x="815" y="540" width="95" height="48" rx="6" fill="rgba(63,185,80,0.15)" stroke="#3fb950" stroke-width="2"/>
+      <text x="862" y="556" text-anchor="middle" fill="#3fb950" font-weight="700" font-size="11">BED-OUT</text>
+      <text x="862" y="572" text-anchor="middle" fill="#a0e0a0" font-size="9">PF5 + VIN</text>
+      <text x="862" y="584" text-anchor="middle" fill="#8b949e" font-size="7">(Low-Side MOSFET)</text>
+
+      <!-- THB -->
+      <rect x="920" y="540" width="95" height="48" rx="6" fill="rgba(188,140,255,0.12)" stroke="#bc8cff" stroke-width="1.5"/>
+      <text x="967" y="556" text-anchor="middle" fill="#bc8cff" font-weight="700" font-size="11">THB</text>
+      <text x="967" y="572" text-anchor="middle" fill="#d0b0ff" font-size="9">PB0 + GND</text>
+      <text x="967" y="584" text-anchor="middle" fill="#8b949e" font-size="7">(Bed Thermistor)</text>
+
+      <!-- 24V PSU → POWER + BED-POWER -->
+      <line x1="550" y1="133" x2="590" y2="133" stroke="#3fb950" stroke-width="1.5"/>
+      <line x1="590" y1="133" x2="590" y2="460" stroke="#3fb950" stroke-width="1.5"/>
+      <line x1="590" y1="460" x2="810" y2="460" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arr-green)"/>
+      <line x1="590" y1="508" x2="810" y2="508" stroke="#3fb950" stroke-width="1.5" marker-end="url(#arr-green)"/>
+      <text x="700" y="453" fill="#3fb950" font-size="8" font-weight="600">24V → POWER</text>
+      <text x="700" y="503" fill="#3fb950" font-size="8" font-weight="600">24V → BED-POWER</text>
+
+      <!-- 48V PSU → MOTOR-POWER -->
+      <line x1="550" y1="68" x2="600" y2="68" stroke="#58a6ff" stroke-width="1.5"/>
+      <line x1="600" y1="68" x2="600" y2="450" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <line x1="600" y1="450" x2="810" y2="450" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="700" y="443" fill="#58a6ff" font-size="8" font-weight="600">48V → MOTOR-POWER</text>
+
+      <!-- BED-OUT -> SSR Control Side -->
+      <line x1="815" y1="560" x2="780" y2="560" stroke="#3fb950" stroke-width="2.5"/>
+      <line x1="780" y1="560" x2="780" y2="420" stroke="#3fb950" stroke-width="2.5"/>
+      <line x1="780" y1="420" x2="630" y2="420" stroke="#3fb950" stroke-width="2.5"/>
+
+      <!-- BED-OUT VIN → SSR DC+ -->
+      <line x1="630" y1="420" x2="630" y2="352" stroke="#3fb950" stroke-width="2"/>
+      <line x1="630" y1="352" x2="597" y2="352" stroke="#3fb950" stroke-width="2" marker-end="url(#arr-green)"/>
+      <text x="620" y="405" fill="#3fb950" font-size="9" font-weight="700">VIN → SSR ③DC+</text>
+
+      <!-- BED-OUT PF5 → SSR DC- -->
+      <line x1="630" y1="420" x2="630" y2="368" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <line x1="620" y1="375" x2="597" y2="375" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="680" y="380" fill="#8b949e" font-size="8">PF5(sw.GND) → SSR ④DC-</text>
+
+      <!-- THB <- Thermistor (Thin Red Wires) -->
+      <path d="M 460 548 L 760 548 L 760 570 L 915 570" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="4,2" fill="none"/>
+      <text x="610" y="541" text-anchor="middle" fill="#bc8cff" font-size="9" font-weight="600">Thin Red Wires -> THB (PB0+GND)</text>
+
+      <!-- ══════════════════════════════════ -->
+      <!-- Legend -->
+      <!-- ══════════════════════════════════ -->
+      <rect x="20" y="690" width="520" height="75" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <text x="35" y="712" fill="#8b949e" font-weight="700" font-size="11">Legend</text>
+      <line x1="35" y1="728" x2="60" y2="728" stroke="#f85149" stroke-width="2.5"/>
+      <text x="68" y="732" fill="#f0a0a0" font-size="10">AC L (Live)</text>
+      <line x1="145" y1="728" x2="170" y2="728" stroke="#4488ff" stroke-width="2.5"/>
+      <text x="178" y="732" fill="#88aaff" font-size="10">AC N (Neutral)</text>
+      <line x1="260" y1="728" x2="285" y2="728" stroke="#e3b341" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="293" y="732" fill="#e3b341" font-size="10">PE (Earth)</text>
+      <line x1="345" y1="728" x2="370" y2="728" stroke="#3fb950" stroke-width="2"/>
+      <text x="378" y="732" fill="#a0e0a0" font-size="10">DC 24V (BED-OUT)</text>
+      <line x1="470" y1="728" x2="495" y2="728" stroke="#bc8cff" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="503" y="732" fill="#d0b0ff" font-size="10">Thermistor (THB)</text>
+
+      <text x="35" y="754" fill="#8b949e" font-size="10">Current Path: Klipper PID -> PF5 ON -> BED-OUT current flows -> SSR DC conducts -> SSR AC conducts -> 220V -> Fuse -> SSR -> Thermal Fuse -> Heater Mat -> N Return</text>
+
+      <!-- PSU Connection Summary -->
+      <rect x="560" y="690" width="480" height="75" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <text x="575" y="712" fill="#8b949e" font-weight="700" font-size="11">Kraken Power Input Summary (3 PSUs)</text>
+      <text x="575" y="732" fill="#58a6ff" font-size="10">48V PSU → <tspan fill="#fff" font-weight="700">MOTOR-POWER</tspan> (VIN+GND+HV) — TMC5160 ×8</text>
+      <text x="575" y="748" fill="#3fb950" font-size="10">24V PSU → <tspan fill="#fff" font-weight="700">POWER</tspan> (VIN+GND) + <tspan fill="#fff" font-weight="700">BED-POWER</tspan> (VIN+GND) — Logic + SSR</text>
+      <text x="575" y="764" fill="#bc8cff" font-size="10">5V PSU -> RPi5 Power (Not wired directly to Kraken)</text>
+
+    </svg>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 2. Heater Pad Wire Color Mapping -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">🔌</span> Heater Pad Wire Color Identification (220V 600W Keenovo)</div>
+  <div class="note-box">
+    <div class="note-title">📷 Verified Against Physical Hardware</div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Wire</th>
+        <th>Color</th>
+        <th>Gauge</th>
+        <th>Location</th>
+        <th>Function</th>
+        <th>Destination (Official Port)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="label-sensor">Thermistor</span></td>
+        <td style="color:#f85149; font-weight:700;">Thin Red Wires x2</td>
+        <td>Thin (~26AWG)</td>
+        <td>Center transparent patch on pad</td>
+        <td>Temperature Sensor (NTC 100K)</td>
+        <td class="pin">Kraken <strong>THB</strong> (PB0 + GND)</td>
+      </tr>
+      <tr>
+        <td><span class="label-ac">AC Power</span></td>
+        <td style="color:#ffffff; font-weight:700;">Thick White Wires x2</td>
+        <td>Thick (~14AWG)</td>
+        <td>Pad edge</td>
+        <td>220V Heater Power (L + N)</td>
+        <td class="pin">L -> via SSR ②L-OUT, N -> Wago N Rail</td>
+      </tr>
+      <tr>
+        <td><span class="label-safety">Earth (PE)</span></td>
+        <td style="color:#4488ff; font-weight:700;">Blue Wire x1 + Ring Terminal</td>
+        <td>Medium</td>
+        <td>Pad edge</td>
+        <td>Bed Frame Ground (PE)</td>
+        <td class="pin">Ring Terminal -> Bed Bolt -> Wago PE Rail</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 3. Kraken Connector Pinout -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">🔌</span> Kraken Bed Connector Pinouts (V1.0 Official Pinout)</div>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+    <div class="connector-box">
+      <div class="conn-title">BED-POWER (2-Pin Screw Terminal)</div>
+      <div class="conn-pins">
+        <div class="conn-pin">
+          <div class="dot red"></div>
+          <span class="pin-label">VIN (12-24V)</span>
+          <span class="pin-label" style="color:#3fb950;">← 24V PSU (+)</span>
+        </div>
+        <div class="conn-pin">
+          <div class="dot black"></div>
+          <span class="pin-label">GND</span>
+          <span class="pin-label" style="color:#8b949e;">← 24V PSU (-)</span>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:0.8em; color:#8b949e;">
+        Dedicated bed power input (separate from logic POWER)<br>
+        Supplies VIN to BED-OUT
+      </div>
+    </div>
+
+    <div class="connector-box">
+      <div class="conn-title">BED-OUT (2-Pin Screw Terminal)</div>
+      <div class="conn-pins">
+        <div class="conn-pin">
+          <div class="dot green"></div>
+          <span class="pin-label">PF5 (sw. GND)</span>
+          <span class="pin-label" style="color:#3fb950;">→ SSR ④DC-</span>
+        </div>
+        <div class="conn-pin">
+          <div class="dot red"></div>
+          <span class="pin-label">VIN (Constant +)</span>
+          <span class="pin-label" style="color:#3fb950;">→ SSR ③DC+</span>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:0.8em; color:#8b949e;">
+        PF5 = Low-Side MOSFET (Pulls to GND when ON)<br>
+        VIN = Constant power supplied from BED-POWER<br>
+        ⚡ PF5 ON → VIN→SSR DC+→SSR DC-→PF5→GND
+      </div>
+    </div>
+
+    <div class="connector-box">
+      <div class="conn-title">THB (2-Pin JST Connector)</div>
+      <div class="conn-pins">
+        <div class="conn-pin">
+          <div class="dot blue"></div>
+          <span class="pin-label">PB0 (ADC)</span>
+          <span class="pin-label" style="color:#bc8cff;"><- Thermistor</span>
+        </div>
+        <div class="conn-pin">
+          <div class="dot black"></div>
+          <span class="pin-label">GND</span>
+          <span class="pin-label" style="color:#8b949e;"><- Thermistor</span>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:0.8em; color:#8b949e;">
+        NTC 100K (ATC Semitec 104NT-4)<br>
+        Non-polarized — reversible connection
+      </div>
+    </div>
+  </div>
+
+  <div class="note-box" style="margin-top:16px;">
+    <div class="note-title">⚡ How BED-OUT Works (Low-Side MOSFET)</div>
+    PF5 on BED-OUT is a <strong>Low-Side MOSFET</strong> output. When Klipper drives PF5 HIGH, the MOSFET turns ON -> PF5 connects to GND -> current flows through the SSR DC input -> SSR AC output conducts -> heater pad warms up.<br>
+    When PF5 is LOW, the MOSFET turns OFF -> circuit opens -> heating stops.<br>
+    <strong>BED-POWER must be connected</strong> for voltage to be present on BED-OUT VIN!
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 4. SSR Terminal Wiring Details -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">⚡</span> SSR Terminal Wiring Details (Official Pinout)</div>
+
+  <div class="diagram-container">
+    <svg viewBox="0 0 750 300" width="750" height="300" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+      <rect width="750" height="300" rx="10" fill="#0d1117"/>
+
+      <!-- SSR Body -->
+      <rect x="220" y="30" width="310" height="220" rx="14" fill="#1a2d1a" stroke="#3fb950" stroke-width="2"/>
+      <text x="375" y="58" text-anchor="middle" fill="#3fb950" font-weight="700" font-size="15">SSR-40DA / Omron G3NA</text>
+
+      <!-- Load Side -->
+      <rect x="240" y="80" width="130" height="130" rx="8" fill="rgba(248,81,73,0.08)" stroke="#f85149" stroke-width="1.5"/>
+      <text x="305" y="100" text-anchor="middle" fill="#f85149" font-weight="700" font-size="12">AC Load Side</text>
+      <rect x="255" y="115" width="100" height="26" rx="4" fill="#2d1a1a" stroke="#f85149" stroke-width="1"/>
+      <text x="305" y="133" text-anchor="middle" fill="#f85149" font-size="10" font-weight="600">① L-IN</text>
+      <rect x="255" y="150" width="100" height="26" rx="4" fill="#2d1a1a" stroke="#f85149" stroke-width="1"/>
+      <text x="305" y="168" text-anchor="middle" fill="#f85149" font-size="10" font-weight="600">② L-OUT</text>
+      <text x="305" y="198" text-anchor="middle" fill="#f0a0a0" font-size="9">Wago L Rail -> ① -> ② -> Thermal Fuse</text>
+
+      <!-- Control Side -->
+      <rect x="385" y="80" width="130" height="130" rx="8" fill="rgba(63,185,80,0.08)" stroke="#3fb950" stroke-width="1.5"/>
+      <text x="450" y="100" text-anchor="middle" fill="#3fb950" font-weight="700" font-size="12">DC Control Side</text>
+      <rect x="400" y="115" width="100" height="26" rx="4" fill="#1a2d1a" stroke="#3fb950" stroke-width="1"/>
+      <text x="450" y="133" text-anchor="middle" fill="#3fb950" font-size="10" font-weight="600">③ DC+ (3-32V)</text>
+      <rect x="400" y="150" width="100" height="26" rx="4" fill="#1a2d1a" stroke="#3fb950" stroke-width="1"/>
+      <text x="450" y="168" text-anchor="middle" fill="#3fb950" font-size="10" font-weight="600">④ DC- (GND)</text>
+
+      <!-- Left Labels -->
+      <text x="110" y="131" text-anchor="middle" fill="#f0a0a0" font-size="10"><- Wago L Rail (via Fuse)</text>
+      <text x="110" y="166" text-anchor="middle" fill="#f0a0a0" font-size="10">-> Thermal Fuse -> Heater Pad L</text>
+      <line x1="220" y1="128" x2="255" y2="128" stroke="#f85149" stroke-width="2"/>
+      <line x1="220" y1="163" x2="255" y2="163" stroke="#f85149" stroke-width="2"/>
+
+      <!-- Right Labels -->
+      <text x="635" y="131" text-anchor="middle" fill="#a0e0a0" font-size="10">← BED-OUT <tspan font-weight="700">VIN</tspan> (Constant 24V)</text>
+      <text x="635" y="166" text-anchor="middle" fill="#8b949e" font-size="10">← BED-OUT <tspan font-weight="700">PF5</tspan> (sw. GND)</text>
+      <line x1="500" y1="128" x2="530" y2="128" stroke="#3fb950" stroke-width="2"/>
+      <line x1="500" y1="163" x2="530" y2="163" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="3,2"/>
+
+      <!-- Heatsink -->
+      <rect x="240" y="230" width="280" height="20" rx="4" fill="rgba(139,148,158,0.1)" stroke="#8b949e" stroke-width="1"/>
+      <text x="375" y="244" text-anchor="middle" fill="#8b949e" font-size="9">▤▤▤ Heatsink Mounting Mandatory ▤▤▤</text>
+
+      <!-- Warning -->
+      <text x="375" y="278" text-anchor="middle" fill="#d29922" font-size="10">⚠ Never cross-wire the AC Load side (①②) and DC Control side (③④)!</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 5. Step-by-Step Wiring Sequence -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">🔧</span> Step-by-Step Wiring Procedure (Kraken V1.0 Official Pinout)</div>
+
+  <div class="note-box danger">
+    <div class="note-title">🔴 Pre-Work Safety Check</div>
+    Unplug the AC power cord or switch off the breaker before starting. Verify 0V with a multimeter.
+  </div>
+
+  <ol class="step-list">
+    <li>
+      <div class="step-title">Wago 221 AC Mains Distribution</div>
+      <div class="step-desc">
+        Distribute L, N, and PE from the AC inlet into three 5-port Wago 221 blocks.<br>
+        <strong>L Rail</strong>: AC Inlet L -> 48V PSU, 24V PSU, 5V PSU, SSR (via 10A fuse)<br>
+        <strong>N Rail</strong>: AC Inlet N -> 48V PSU, 24V PSU, 5V PSU, Heater Pad N (White wire)<br>
+        <strong>PE Rail</strong>: AC Inlet PE -> 48V PSU, 24V PSU, 5V PSU, Bed Frame Earth (Blue wire)
+      </div>
+    </li>
+    <li>
+      <div class="step-title">PSU DC Outputs -> Kraken Power Inputs</div>
+      <div class="step-desc">
+        <strong>48V PSU</strong> → Kraken <strong>MOTOR-POWER</strong> (VIN + GND + HV)<br>
+        <strong>24V PSU</strong> → Kraken <strong>POWER</strong> (VIN + GND) <em>AND</em> <strong>BED-POWER</strong> (VIN + GND)<br>
+        Note: Connect both POWER and BED-POWER to the 24V PSU. BED-OUT will not function if BED-POWER is unpowered!
+      </div>
+    </li>
+    <li>
+      <div class="step-title">Mount SSR Heatsink & Secure to DIN Rail</div>
+      <div class="step-desc">
+        Apply thermal compound and mount the SSR onto a DIN-rail heatsink.
+        Secure to the DIN rail in a well-ventilated electronics bay area.
+      </div>
+    </li>
+    <li>
+      <div class="step-title">AC Load Wiring: Wago L Rail -> Fuse -> SSR -> Thermal Fuse -> Heater Pad</div>
+      <div class="step-desc">
+        Wago L Rail 4th port -> <strong>10A Fuse</strong> -> SSR <strong>① L-IN</strong><br>
+        SSR <strong>② L-OUT</strong> -> <strong>Thermal Fuse</strong> (125C) -> Heater Pad L (Thick White Wire 1)<br>
+        Heater Pad N (Thick White Wire 2) -> Wago N Rail<br>
+        Secure the <strong>thermal fuse</strong> flush against the heater pad with Kapton tape (if not already integrated inside the Keenovo pad).
+      </div>
+    </li>
+    <li>
+      <div class="step-title">Protective Earth (PE) Grounding</div>
+      <div class="step-desc">
+        Heater pad blue wire + ring terminal -> bolt to aluminum bed frame -> connect to Wago PE Rail<br>
+        Note: Bolt the factory ring terminal directly to the bed frame, and route the other end to the Wago PE Rail.
+      </div>
+    </li>
+    <li>
+      <div class="step-title">DC Control Wiring: Kraken BED-OUT -> SSR</div>
+      <div class="step-desc">
+        Kraken <strong>BED-OUT VIN</strong> → SSR <strong>③ DC+</strong><br>
+        Kraken <strong>BED-OUT PF5</strong> → SSR <strong>④ DC-</strong><br>
+        <strong>Wire Gauge</strong>: 22–24AWG (low-current control signal). <strong>Verify polarity!</strong><br>
+        VIN = Constant 24V (+), PF5 = Pulled to GND (-) when MOSFET is ON
+      </div>
+    </li>
+    <li>
+      <div class="step-title">Thermistor Wiring: Heater Pad -> Kraken THB</div>
+      <div class="step-desc">
+        Route the <strong>two thin red wires</strong> from the center patch -> Kraken <strong>THB</strong> port (PB0 + GND)<br>
+        Non-polarized. Route the red thermistor wires away from the white AC mains wires to prevent EMI noise.
+      </div>
+    </li>
+    <li>
+      <div class="step-title">Pre-Power Inspection & Functional Test</div>
+      <div class="step-desc">
+        1. Verify infinite resistance (isolation) between AC mains and DC logic rails with a multimeter<br>
+        2. Verify thermistor resistance (~100k ohm at 25C room temperature)<br>
+        3. Confirm 24V is connected to BED-POWER<br>
+        4. Power on and confirm Klipper reads ambient room temperature (~20–30C) on heater_bed<br>
+        5. Test heating with <code>SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET=50</code>
+      </div>
+    </li>
+  </ol>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 6. Klipper Configuration -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">⚙️</span> Klipper Configuration (printer.cfg) — Official Kraken Pinout</div>
+
+  <div class="config-block"><span class="cfg-comment"># --- Heated Bed Configuration (AC SSR Control) ---</span>
+<span class="cfg-comment"># Kraken V1.0 Official Pinout:</span>
+<span class="cfg-comment">#   BED-OUT  : PF5 (Low-Side MOSFET) + VIN (BED-POWER) -> SSR DC Control</span>
+<span class="cfg-comment">#   THB      : PB0 (ADC) + GND -> Bed Thermistor Input</span>
+<span class="cfg-comment">#   BED-POWER: 24V PSU -> VIN+GND (Supplies BED-OUT)</span>
+
+<span class="cfg-section">[heater_bed]</span>
+<span class="cfg-key">heater_pin:</span> <span class="cfg-value">PF5</span>       <span class="cfg-comment"># Kraken BED-OUT (Low-Side MOSFET -> SSR DC Control)</span>
+<span class="cfg-key">sensor_type:</span> <span class="cfg-value">ATC Semitec 104NT-4-R025H42G</span>   <span class="cfg-comment"># Integrated Keenovo NTC 100K thermistor</span>
+<span class="cfg-key">sensor_pin:</span> <span class="cfg-value">PB0</span>        <span class="cfg-comment"># Kraken THB port</span>
+<span class="cfg-key">max_power:</span> <span class="cfg-value">1.0</span>         <span class="cfg-comment"># Full power for AC SSR control</span>
+<span class="cfg-key">min_temp:</span> <span class="cfg-value">0</span>
+<span class="cfg-key">max_temp:</span> <span class="cfg-value">120</span>          <span class="cfg-comment"># Rated for ABS/ASA chamber printing (110C + margin)</span>
+<span class="cfg-key">control:</span> <span class="cfg-value">pid</span>          <span class="cfg-comment"># PID_CALIBRATE HEATER=heater_bed TARGET=110</span>
+<span class="cfg-key">pid_Kp:</span> <span class="cfg-value">xxx</span>
+<span class="cfg-key">pid_Ki:</span> <span class="cfg-value">xxx</span>
+<span class="cfg-key">pid_Kd:</span> <span class="cfg-value">xxx</span></div>
+
+  <div class="note-box">
+    <div class="note-title">💡 Mandatory PID Calibration</div>
+    After assembly, run <code>PID_CALIBRATE HEATER=heater_bed TARGET=110</code> -> <code>SAVE_CONFIG</code><br>
+    High-wattage AC beds heat rapidly and require proper PID tuning to prevent overshoot.
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 7. Safety Checklist -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">✅</span> Post-Wiring Safety Checklist</div>
+  <ul class="checklist">
+    <li><span class="check-icon check-danger">●</span><span><strong>AC / DC Isolation</strong> — Verify infinite resistance between AC mains and DC logic wiring</span></li>
+    <li><span class="check-icon check-danger">●</span><span><strong>PE Earth Continuity</strong> — Verify < 1 ohm between Aluminum Bed Frame, Wago PE Rail, and AC Inlet PE</span></li>
+    <li><span class="check-icon check-danger">●</span><span><strong>SSR Polarity</strong> — Confirm BED-OUT VIN -> SSR ③DC+ and BED-OUT PF5 -> SSR ④DC-</span></li>
+    <li><span class="check-icon check-danger">●</span><span><strong>BED-POWER Feed</strong> — Confirm 24V PSU is wired to BED-POWER (VIN+GND)</span></li>
+    <li><span class="check-icon check-warn">●</span><span><strong>Thermal Fuse</strong> — Verify 125C thermal fuse is mounted in firm contact with the heater pad</span></li>
+    <li><span class="check-icon check-warn">●</span><span><strong>Thermistor Separation</strong> — Keep thin red thermistor wires separated by >= 10mm from AC mains lines</span></li>
+    <li><span class="check-icon check-warn">●</span><span><strong>Wago Termination</strong> — Verify strip length and confirm all Wago 221 levers are fully latched</span></li>
+    <li><span class="check-icon check-ok">●</span><span><strong>Ambient Reading</strong> — Confirm THB (PB0) reports ~20–30C in Klipper before heating</span></li>
+    <li><span class="check-icon check-ok">●</span><span><strong>Heating Test</strong> — Set TARGET=50 and confirm smooth temperature rise and regulation</span></li>
+    <li><span class="check-icon check-ok">●</span><span><strong>PID Tuning</strong> — Run PID_CALIBRATE TARGET=110 -> SAVE_CONFIG</span></li>
+    <li><span class="check-icon check-ok">●</span><span><strong>SSR Heatsink Temp</strong> — Confirm SSR heatsink stays below 80C during 110C bed soak</span></li>
+  </ul>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- 8. Troubleshooting -->
+<!-- ════════════════════════════════════════ -->
+<div class="section">
+  <div class="section-title"><span class="icon">🚨</span> Troubleshooting</div>
+  <table>
+    <thead><tr><th>Symptom</th><th>Possible Cause</th><th>Resolution</th></tr></thead>
+    <tbody>
+      <tr><td>Bed does not heat</td><td>BED-POWER disconnected, reversed SSR DC polarity, blown fuse/thermal fuse</td><td>Check 24V at BED-POWER, verify SSR ③/④ polarity, test fuse continuity</td></tr>
+      <tr><td>Bed stays ON continuously</td><td>SSR failed shorted, counterfeit/undersized SSR</td><td>Disconnect AC immediately! Replace SSR (authentic Omron recommended)</td></tr>
+      <tr><td>Abnormal temp reading</td><td>Open thermistor wire or loose THB JST connector</td><td>Measure thermistor resistance (~100k ohm @ 25C) and reseat THB plug</td></tr>
+      <tr><td>Unstable temperature</td><td>AC EMI noise on thermistor lines or untuned PID</td><td>Separate thermistor wires from AC lines and re-run PID_CALIBRATE</td></tr>
+      <tr><td>ADC out of range</td><td>Mismatched sensor_type or shorted thermistor wire</td><td>Verify sensor_type in printer.cfg and inspect thermistor insulation</td></tr>
+      <tr><td>SSR heatsink overheating (>80C)</td><td>Undersized heatsink or insufficient airflow</td><td>Upgrade DIN heatsink or add electronics bay cooling fan</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ════════════════════════════════════════ -->
+<!-- Footer -->
+<!-- ════════════════════════════════════════ -->
+<div class="footer">
+  Voron 2.4 350mm AWD + StealthChanger + BoxTurtle — Heated Bed Wiring Diagram<br>
+  BTT Kraken V1.0 Official Pinout: <strong>BED-OUT</strong> (PF5+VIN) / <strong>THB</strong> (PB0+GND) / <strong>BED-POWER</strong> (Dedicated 24V)<br>
+  3-PSU Architecture: 48V (MOTOR-POWER) + 24V (POWER+BED-POWER) + 5V (RPi5)<br>
+  ⚠ Always follow high-voltage AC 220V safety procedures
+</div>
+
+</body>
+</html>

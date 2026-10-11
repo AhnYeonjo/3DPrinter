@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3DOS — Device</title>
+<style>
+  :root{
+    --bg:#0c0c10; --card:#16161b; --soft:#1e1e25; --line:#2d2d36; --line2:#3a3a46;
+    --txt:#f0f0f5; --dim:#8b8b97; --accent:#ff2d7e; --accent-d:#d4146a;
+    --warn:#f0a93b; --danger:#ff4d6a; --chip:#24242d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-size:13px;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif}
+  .wrap{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;padding:14px;align-items:stretch}
+  /* Fill viewport height on FHD+ displays so camera and panels expand vertically */
+  @media(min-height:681px){.wrap{height:100vh;min-height:0;overflow:hidden}}
+  .rightpanel{align-self:stretch}
+  .col>.card:first-child{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  @media(max-width:960px){.wrap{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px}
+  .ch{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid #23232c}
+  .ch .t{font-weight:600;font-size:13px}
+  .muted{font-size:11px;color:var(--dim)}
+  /* camera */
+  .tab{border:none;background:none;color:var(--dim);padding:6px 11px;border-radius:7px;cursor:pointer;font:inherit;font-size:12px}
+  .tab.on{background:#23232c;color:var(--txt);font-weight:500}
+  .camtools{margin-left:auto;display:flex;gap:10px;color:#aeb4bd}
+  .camtools button{border:none;background:none;cursor:pointer;color:#aeb4bd;font-size:15px}
+  .stage{display:grid;gap:3px;background:#0e1116;border-radius:0 0 13px 13px;overflow:hidden;flex:1;min-height:220px}
+  .feed{position:relative;background:#13171d;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .feed img{width:100%;height:100%;object-fit:cover}
+  .feed .lbl{position:absolute;top:9px;left:11px;color:#aeb6c2;font-size:11px;background:rgba(0,0,0,.4);padding:2px 8px;border-radius:5px}
+  .feed .ph2{position:absolute;inset:0}
+  .feed .ph-bg{width:100%;height:100%;display:block}
+  /* progress */
+  .prow{display:flex;align-items:center;gap:13px;padding:14px}
+  .thumb{width:58px;height:58px;border-radius:10px;background:var(--soft);border:1px solid var(--line);
+         display:flex;align-items:center;justify-content:center;color:#b6bcc4;font-size:22px}
+  .pmid{flex:1;min-width:0}
+  .pname{font-weight:500;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar{height:7px;border-radius:6px;background:#23232c;overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;background:var(--accent);transition:width .4s}
+  .pmeta{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-top:6px}
+  .pmeta2{display:flex;gap:14px;color:var(--dim);font-size:11px;margin-top:4px}
+  .pmeta2 b{color:var(--txt);font-weight:600}
+  .objbtn{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--soft);color:var(--txt);border-radius:7px;padding:5px 9px;font:inherit;font-size:11px;cursor:pointer;margin-right:8px}
+  .objbtn:hover{border-color:var(--danger);color:var(--danger)}
+  .objbtn svg{color:var(--danger)}
+  #bedmap svg{width:100%;max-width:360px;display:block;margin:0 auto;background:#1c1c24;border-radius:10px}
+  .objrow{display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid #26262f;font-size:13px;cursor:pointer}
+  .objrow .nm{flex:1}
+  .objrow.excl .nm{text-decoration:line-through;color:var(--dim)}
+  .objrow .tag{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--dim)}
+  .objrow .tag.cur{color:var(--accent);border-color:var(--accent)}
+  .objrow .tag.skip{color:var(--danger);border-color:var(--danger)}
+  .ppct{text-align:right}.ppct .n{font-size:24px;font-weight:600}.ppct .s{color:var(--accent);font-size:11px}
+  .pctl{display:flex;gap:8px;padding:0 14px 14px}
+  .pctl button{border:1px solid var(--line);background:var(--soft);border-radius:8px;padding:6px 13px;font:inherit;font-size:12px;color:var(--txt);cursor:pointer}
+  .pctl button:hover{border-color:var(--line2)}
+  /* right-panel tabs */
+  .rtab-bar{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .rtab{border:none;background:none;color:var(--dim);font:inherit;font-size:14px;font-weight:500;padding:8px 16px;border-radius:8px;cursor:pointer}
+  .rtab.on{background:var(--chip,#23232c);color:var(--txt);font-weight:600}
+  .rt-actions{margin-left:auto;display:flex;gap:5px;align-items:center}
+  .speed-chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--soft);
+    color:var(--txt);border-radius:7px;padding:6px 9px;font:inherit;font-size:12px;cursor:pointer}
+  .speed-chip:hover{border-color:var(--accent)}
+  .speed-chip svg{color:var(--accent)}.speed-chip b{font-weight:600}
+  .rpane{padding:14px}
+  /* temps (left, single column) + jog pad (right) side by side */
+  .ctlrow{display:flex;gap:16px;align-items:flex-start;margin-bottom:12px}
+  .temps-col{display:flex;flex-direction:column;gap:11px;font-size:13px;flex:1;min-width:0;padding-top:4px}
+  .temps-col .r{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .temps-col b{font-weight:700}.temps-col .z{color:var(--dim)}
+  .jog-col{flex:none}
+  .movelab{font-size:11px;color:var(--dim);margin:10px 0 7px}
+  /* XY directional pad — ~70% scale, labels inside buttons */
+  .xypad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:176px}
+  .xybtn{border:1px solid var(--line);background:var(--soft);border-radius:9px;font:inherit;font-size:12px;font-weight:600;color:var(--txt);cursor:pointer;min-height:38px;display:flex;align-items:center;justify-content:center;gap:1px}
+  .xybtn small{font-size:10px;color:var(--dim);font-weight:400}
+  .xybtn:active{background:#2c1622;border-color:var(--accent)}
+  .xybtn.home{background:#2c1622;border-color:var(--accent);color:var(--accent);font-size:15px}
+  /* left column: jog-distance step selector */
+  .stepbtn{border:1px solid var(--line);background:var(--soft);border-radius:9px;font:inherit;font-size:12px;font-weight:600;color:var(--txt);cursor:pointer;min-height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+  .stepbtn small{font-size:8px;color:var(--dim);font-weight:400}
+  .stepbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .stepbtn.on small{color:rgba(255,255,255,.85)}
+  /* right column: Z gantry move */
+  .zpad{border:1px solid var(--accent);background:#2c1622;border-radius:9px;font:inherit;font-size:13px;font-weight:600;color:var(--accent-d);cursor:pointer;min-height:38px;display:flex;align-items:center;justify-content:center;gap:1px}
+  .zpad small{font-size:13px}
+  .zpad:active{background:#3a1c2c}
+  /* control header buttons */
+  .gbtn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px 11px;font:inherit;font-size:12px;font-weight:500;cursor:pointer}
+  .gbtn:hover{background:var(--accent-d)}
+  .ctl{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:14px 13px;align-items:center}
+  .temps{display:flex;flex-direction:column;gap:9px;font-size:12px}
+  .temps .r{display:flex;align-items:center;gap:7px}
+  .temps b{font-weight:700}.temps .z{color:var(--dim)}
+  .ic{width:16px;height:16px;flex:none;color:var(--dim)}
+  .jogwrap{justify-self:center;position:relative;width:150px;height:150px}
+  .seg{fill:#1e1e26;stroke:var(--line);stroke-width:1;cursor:pointer}
+  .seg:hover{fill:#2c1622}
+  .home{fill:#2c1622;stroke:var(--accent);stroke-width:1.2;cursor:pointer}
+  .axis{font-size:11px;fill:var(--txt);font-weight:500;pointer-events:none}
+  .dist{font-size:9px;fill:#aab0b9;pointer-events:none}
+  .homeic{position:absolute;left:0;right:0;top:64px;text-align:center;color:var(--accent);font-size:15px;pointer-events:none}
+  .zc{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .zbtn{width:42px;height:36px;border:1px solid var(--line);background:var(--soft);border-radius:8px;cursor:pointer;font-size:14px;color:var(--txt)}
+  .zbtn:hover{border-color:var(--line2)}
+  .zc small{color:var(--dim);font-size:10px}
+  .bed{grid-column:1/3;display:flex;gap:6px;align-items:center;font-size:11px;margin-top:2px}
+  .bed button{border:1px solid var(--line);background:var(--soft);border-radius:7px;padding:6px 9px;cursor:pointer;font:inherit;color:var(--txt)}
+  .bed .lab{color:var(--dim);margin:0 2px}
+  .speed{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .spbtn{border:1px solid var(--line);background:var(--soft);border-radius:7px;padding:5px 9px;cursor:pointer;font:inherit;font-size:11px;color:var(--txt)}
+  .spbtn.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+  /* filament tiles */
+  .filsec{padding:4px 13px 14px}
+  .slots{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .slot{border:2px solid transparent;border-radius:9px;overflow:hidden;background:var(--card);cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:all .2s ease}
+  .slot.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent),0 4px 12px rgba(0,0,0,0.4);transform:translateY(-2px)}
+  .slot.problem{border-color:var(--danger)}
+  .slot .top{height:60px;padding:8px 9px;display:flex;flex-direction:column;justify-content:space-between}
+  .slot .top .m{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:13px}
+  .slot .top .m .gear{opacity:.85;font-size:16px;cursor:pointer;padding:0 4px}
+  .slot .top .m .gear:hover{opacity:1}
+  .slot .empty .gear{color:var(--danger);cursor:pointer;font-size:16px}
+  .slot .top .tmp{font-size:11px;opacity:.95}
+  .slot .foot{padding:7px 9px}
+  .ficons{display:flex;align-items:center;justify-content:space-between;gap:4px}
+  .ficons .fi{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--dim)}
+  .ficons .fi svg{flex:none}
+  .ficons .fanv{color:#9aa1ab}
+  .ficons .fanv.hot{color:#c2884a}
+  .slot .frow{display:flex;justify-content:space-between}
+  .sdot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px;vertical-align:middle}
+  .sdot.on{background:var(--accent)} .sdot.off{background:var(--danger)}
+  .slot .empty{height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+        color:var(--danger);font-size:10px;font-weight:600;
+        background:repeating-linear-gradient(45deg,#2a1418,#2a1418 6px,#3a1c22 6px,#3a1c22 12px)}
+  .slot.problem .foot{color:var(--danger)}
+  .filact{display:flex;align-items:center;gap:8px;margin-top:11px}
+  .filact .sp{flex:1}
+  .fhead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .bt-status{font-size:11px;color:var(--dim)}
+  .bt-status .on{color:var(--accent);font-weight:500}
+  .bt-status .off{color:var(--dim)}
+  .slot .feeder{font-size:9px;padding:1px 5px;border-radius:10px;background:rgba(0,0,0,.18);color:#fff}
+  .slot .empty .feeder{background:#3a1c22;color:var(--danger)}
+  .lite{border:1px solid var(--line);background:var(--soft);border-radius:7px;padding:6px 13px;cursor:pointer;font:inherit;font-size:12px;color:var(--txt)}
+  .lite.green{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:500}
+  /* modal */
+  .mbg{position:fixed;inset:0;background:rgba(20,24,30,.45);display:none;align-items:center;justify-content:center;z-index:30;padding:20px}
+  .mbg.show{display:flex}
+  .modal{background:var(--card);border-radius:14px;width:min(720px,96vw);max-height:90vh;overflow:auto;border:1px solid var(--line)}
+  .mhead{display:flex;align-items:center;padding:15px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card)}
+  .mhead h2{margin:0;font-size:15px;font-weight:600}.mhead .x{margin-left:auto;border:none;background:none;font-size:20px;cursor:pointer;color:var(--dim)}
+  .mbody{padding:18px}
+  .sect{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin:16px 0 8px}
+  .sect:first-child{margin-top:0}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  label{display:block;font-size:11px;color:var(--dim);margin:0 0 3px}
+  input,select{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit;background:var(--soft);color:var(--txt)}
+  .chiprow{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{border:1px solid var(--line);background:var(--soft);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:12px}
+  .chip:hover{border-color:var(--accent)}
+  .hchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:12px;margin:0 6px 6px 0}
+  .hdot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+  .hchip.off{border-color:var(--danger);color:var(--danger)} .hchip.off .hdot{background:var(--danger)}
+  .tcat h4{margin:14px 0 6px;font-size:11px;color:#3a7afe;text-transform:uppercase}
+  pre{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:11px;font-family:ui-monospace,monospace;font-size:11px;overflow:auto;max-height:200px}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1f2329;color:#fff;padding:9px 18px;border-radius:9px;opacity:0;transition:.2s;z-index:50;pointer-events:none;font-size:12px}
+  .toast.show{opacity:1}
+  .frow2{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .frow2 .lbl{width:64px;flex:none;color:var(--txt);font-size:13px;line-height:1.3}
+  .curswatch{display:inline-block;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);cursor:pointer;vertical-align:middle}
+  .cpanel{margin-top:10px;background:#23232c;border-radius:12px;padding:14px}
+  .cpanel .clab{font-size:12px;color:var(--txt);margin:0 0 8px}
+  .cpanel .cgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;margin-bottom:14px}
+  .cpanel .crow{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .cdot{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+  .cdot.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--card) inset}
+  .cpanel .custom{display:flex;align-items:center;gap:10px}
+  .cpanel .custom input[type=color]{width:88px;height:34px;border:1px solid var(--line);border-radius:8px;padding:2px;cursor:pointer;background:#fff}
+  .capt{font-size:12px;color:var(--txt);margin-bottom:5px}
+  .tempbox{display:flex;align-items:center;gap:4px}.tempbox input{text-align:left}
+  .tempbox span{color:var(--dim)}
+  .toggle{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #26262f}
+  .toggle .tinfo{flex:1}.toggle .tinfo b{font-weight:500;font-size:13px}.toggle .tinfo div{font-size:11px;color:var(--dim);margin-top:2px}
+  .sw{position:relative;width:42px;height:24px;flex:none;cursor:pointer}
+  .sw input{display:none}
+  .sw i{position:absolute;inset:0;background:#3a3a45;border-radius:20px;transition:.18s}
+  .sw i:before{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.18s}
+  .sw input:checked + i{background:var(--accent)} .sw input:checked + i:before{transform:translateX(18px)}
+  .mtrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #26262f;font-size:13px}
+  .mtrow .v{font-weight:600}
+  .lifebar{height:7px;border-radius:6px;background:#23232c;overflow:hidden;margin-top:6px}
+  .lifebar>i{display:block;height:100%;background:var(--accent)}
+  .lifebar.due>i{background:var(--danger)}
+  .badge{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);color:var(--dim)}
+  .badge.dry{color:var(--warn);border-color:var(--warn)}
+  .badge.live{color:var(--accent);border-color:var(--accent)}
+
+  /* ===== 1024×600 (and small touch screens) — tabbed, fits one screen ===== */
+  @media (max-height: 680px){
+    body{font-size:12px}
+    .wrap{height:100vh;min-height:0;padding:7px;gap:7px;grid-template-columns:1.18fr 1fr;align-items:stretch}
+    .col{gap:7px;min-height:0}
+    .col > .card:first-child{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+    .stage{height:auto;flex:1;min-height:110px}
+    .ch{padding:7px 11px}
+    .prow{padding:9px 11px}.thumb{width:46px;height:46px}.pname{margin-bottom:5px}
+    .pctl{padding:0 11px 9px}.pctl button{padding:8px 12px}
+    .rightpanel{align-self:stretch;overflow-y:auto;min-height:0;height:100%}
+    .rpane{padding:11px}
+    .ctlrow{gap:12px;margin-bottom:10px}.temps-col{gap:10px}
+    .gbtn{padding:8px 11px}.lite{padding:9px 14px}.tab{padding:8px 13px}
+  }
+  /* ===== 800×480 (5"/7" LCD) — fit everything, no scroll ===== */
+  @media (max-height: 540px){
+    body{font-size:11.5px}
+    .wrap{padding:5px;gap:5px;grid-template-columns:1.04fr 1fr}
+    .stage{min-height:64px}
+    .ch{padding:5px 9px}.ch .t{font-size:12px}
+    .prow{padding:6px 9px;gap:9px}.thumb{width:38px;height:38px}.pname{margin-bottom:3px}
+    .pmeta,.pmeta2{margin-top:3px;font-size:10px}.pmeta2{gap:10px}
+    .pctl{padding:0 9px 6px;gap:6px}.pctl button{padding:6px 9px}
+    .rpane{padding:6px 9px}
+    .ch+.rpane{padding-top:7px}
+    .ctlrow{gap:10px;margin-bottom:5px}
+    .temps-col{gap:5px;font-size:11px;padding-top:2px}
+    .movelab{margin:4px 0 4px}
+    .xypad{width:150px;gap:5px}
+    .xybtn,.stepbtn,.zpad{min-height:31px;border-radius:8px;font-size:11px}
+    .xybtn.home{font-size:13px}
+    .speed{gap:4px}.spbtn{padding:5px 8px;font-size:11px}
+    .fhead{margin-bottom:5px}
+    .slots{gap:7px;padding:8px}
+    .slot .top{height:38px;padding:4px 7px}
+    .slot .top .m{font-size:11px}.slot .top .tmp{font-size:9px}
+    .slot .foot{padding:4px 6px}.ficons .fi{font-size:9px}
+    .filact{margin-top:6px}
+    .gbtn{padding:6px 9px;font-size:11px}.lite{padding:6px 11px}
+  }
+  @media (max-height: 680px) and (max-width: 760px){
+    .wrap{grid-template-columns:1fr;height:auto;overflow:auto}
+    .rightpanel{overflow:visible;max-height:none;height:auto}
+  }
+  /* ===== 1280x800 touch panel — larger controls + full viewport ===== */
+  @media (min-width:1100px) and (max-width:1500px) and (min-height:681px) and (max-height:900px){
+    body{font-size:15px}
+    .wrap{height:100vh;padding:16px;gap:16px;grid-template-columns:1.3fr 1fr}
+    .ch{padding:13px 16px}
+    .ch .t{font-size:15px}
+    .stage{min-height:320px}
+    .tab{padding:10px 16px;font-size:14px}
+    .gbtn{padding:11px 16px;font-size:14px}
+    .lite{padding:12px 18px;font-size:14px}
+    .pctl button{padding:12px 16px;font-size:14px}
+    .prow{padding:14px 16px}
+    .thumb{width:64px;height:64px}
+    .ppct .n{font-size:34px}
+    .xybtn,.stepbtn,.zpad{min-height:48px;font-size:14px}
+    .slot .top{height:74px}
+    .slot .top .m{font-size:15px}
+    .slot .top .m .gear{font-size:18px}
+    .temps-col{font-size:14px}
+    .temps-col .r b{font-size:15px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- LEFT -->
+  <div class="col">
+    <div class="card">
+      <div class="ch">
+        <span class="t" data-i18n="camera">Camera</span>
+        <button class="tab on" id="ct0" onclick="setCam('cam0')">Cam 1</button>
+        <button class="tab" id="ct1" onclick="setCam('cam1')">Cam 2</button>
+        <button class="tab" id="ctS" onclick="setCam('split')" data-i18n="split">Split</button>
+        <span class="camtools"><button data-i18n-title="refresh" title="Refresh" onclick="renderCam()">⟳</button><button data-i18n-title="fullscreen" title="Fullscreen" onclick="fsCam()">⛶</button></span>
+      </div>
+      <div class="stage" id="stage"></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><span class="t" data-i18n="progress">Print progress</span>
+        <button class="objbtn" style="margin-left:auto" onclick="openModal('objects')" data-i18n-title="skip_objects" title="Skip objects">
+          <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg><span data-i18n="skip_objects">Skip objects</span></button>
+        <span class="badge" id="modeBadge">—</span></div>
+      <div class="prow">
+        <div class="thumb">▣</div>
+        <div class="pmid">
+          <div class="pname" id="pname">—</div>
+          <div class="bar"><i id="pbar"></i></div>
+          <div class="pmeta"><span id="player">—</span><span id="peta"></span></div>
+          <div class="pmeta2"><span><span data-i18n="total">Total</span> <b id="ptotal">—</b></span><span><span data-i18n="elapsed">Elapsed</span> <b id="pelapsed">—</b></span><span><span data-i18n="remaining">Left</span> <b id="premain">—</b></span></div>
+        </div>
+        <div class="ppct"><div class="n" id="ppct">0<span style="font-size:13px">%</span></div><div class="s" id="pstate" data-i18n="idle">idle</div></div>
+      </div>
+      <div class="pctl">
+        <button onclick="pctl('PAUSE')">❙❙ <span data-i18n="pause">Pause</span></button>
+        <button onclick="pctl('RESUME')">▶ <span data-i18n="resume">Resume</span></button>
+        <button onclick="pctl('CANCEL_PRINT')">■ <span data-i18n="stop">Stop</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="card rightpanel">
+    <div class="ch rtab-bar">
+      <button class="rtab on" id="rt-device" onclick="rtab('device')" data-i18n="device">Device</button>
+      <button class="rtab" id="rt-console" onclick="rtab('console')" data-i18n="console">Console</button>
+      <span class="rt-actions">
+        <button class="speed-chip" onclick="openModal('speed')" data-i18n-title="speed_edit" title="Print speed (click to edit)">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3 12a5 5 0 1 1 10 0"/><path d="M8 9l3-2.2"/></svg>
+          <b id="speedNow">100%</b>
+        </button>
+        <button class="objbtn" onclick="openModal('parts')" data-i18n-title="parts" title="Parts" style="margin:0;padding:6px 9px;border-radius:8px"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="var(--txt)" stroke-width="1.3"><rect x="3" y="3" width="10" height="10" rx="2"/><path d="M6 3v10M10 3v10M3 6h10M3 10h10"/></svg></button>
+        <button class="objbtn" onclick="openModal('opts')" data-i18n-title="options" title="Options" style="margin:0;padding:6px 9px;border-radius:8px"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="var(--txt)" stroke-width="1.3"><path d="M3 5h10M3 11h10M6 3v4M11 9v4"/></svg></button>
+        <button class="objbtn" onclick="openModal('calib')" data-i18n-title="calib" title="Calibration" style="margin:0;padding:6px 9px;border-radius:8px"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="var(--txt)" stroke-width="1.3"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="2"/></svg></button>
+      </span>
+    </div>
+
+    <div id="pane-device" style="display:flex; flex-direction:column; height:calc(100% - 41px); overflow-y:auto">
+      <!-- CONTROL -->
+      <div class="rpane" id="pane-ctl">
+      <div class="ctlrow">
+        <div class="temps-col">
+          <div class="r" data-i18n-title="active_nozzle" title="Active mounted tool (click to set)" onclick="setNozzle()"><svg class="ic" viewBox="0 0 16 16"><path d="M8 1a2 2 0 0 0-2 2v6a3 3 0 1 0 4 0V3a2 2 0 0 0-2-2z" fill="none" stroke="#e0922f" stroke-width="1.2"/><circle cx="8" cy="11" r="1.6" fill="#e0922f"/></svg><span data-i18n="nozzle">Nozzle</span> <span id="noz_tool" style="color:var(--accent);font-weight:600">T0</span> <b id="t_noz">—</b><span class="z">/<span id="t_noz_t">0</span>℃</span></div>
+          <div class="r" data-i18n-title="bed_set" title="Bed (click to set)" onclick="setBed()"><svg class="ic" viewBox="0 0 16 16"><rect x="2" y="9" width="12" height="4" rx="1" fill="none" stroke="#e0922f" stroke-width="1.2"/><path d="M5 7c0-1.5 1-1.5 1-3M8 7c0-1.5 1-1.5 1-3M11 7c0-1.5 1-1.5 1-3" stroke="#e0922f" stroke-width="1" fill="none"/></svg><span data-i18n="bed">Bed</span> <b id="t_bed">—</b><span class="z">/<span id="t_bed_t">0</span>℃</span></div>
+          <div class="r" data-i18n-title="chamber_set" title="Chamber (click to set)" onclick="setChamber()"><svg class="ic" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" fill="none" stroke="#9aa1ab" stroke-width="1.2"/></svg><span data-i18n="chamber">Chamber</span> <b id="t_cha">—</b><span class="z">/<span id="t_cha_t">0</span>℃</span></div>
+          <div class="r" data-i18n-title="nevermore_set" title="Nevermore (click to set)" onclick="setNevermore()"><svg class="ic" viewBox="0 0 16 16"><circle cx="8" cy="8" r="1.5" fill="#9aa1ab"/><path d="M8 6.5C8 3 11 4 11 6.5M8 9.5C8 13 5 12 5 9.5M6.5 8C3 8 4 5 6.5 5M9.5 8C13 8 12 11 9.5 11" stroke="#9aa1ab" stroke-width="1" fill="none"/></svg><span data-i18n="nevermore">Nevermore</span> <b style="color:var(--txt)" id="t_nev">0%</b></div>
+          <div class="r" style="color:var(--accent)"><svg class="ic" viewBox="0 0 16 16"><path d="M8 2a4 4 0 0 1 2 7v2H6V9a4 4 0 0 1 2-7z" fill="none" stroke="#ff2d7e" stroke-width="1.2"/><path d="M6.5 13h3" stroke="#ff2d7e" stroke-width="1.2"/></svg><span data-i18n="lamp">Lamp</span>
+            <input type="checkbox" id="lamp" onchange="lamp()" style="width:auto;margin-left:6px" checked></div>
+        </div>
+
+        <div class="jog-col">
+          <div class="movelab" style="margin-top:0"><span data-i18n="move">Move</span> <span class="muted"><span data-i18n="step">step</span> <span id="stepLabel">10</span>mm</span></div>
+          <div class="xypad">
+            <button class="stepbtn on" id="step10" onclick="setStep(10)">10<small>mm</small></button>
+            <button class="xybtn" onclick="jogXY(0,1)">Y<small>▲</small></button>
+            <button class="zpad" onclick="zMove(1)">Z<small>+</small></button>
+            <button class="xybtn" onclick="jogXY(-1,0)"><small>◀</small>-X</button>
+            <button class="xybtn home" onclick="homeAll()">⌂</button>
+            <button class="xybtn" onclick="jogXY(1,0)">X<small>▶</small></button>
+            <button class="stepbtn" id="step1" onclick="setStep(1)">1<small>mm</small></button>
+            <button class="xybtn" onclick="jogXY(0,-1)">-Y<small>▼</small></button>
+            <button class="zpad" onclick="zMove(-1)">Z<small>−</small></button>
+          </div>
+        </div>
+
+        <div class="ext-col" style="flex:none; width:64px; display:flex; flex-direction:column;">
+          <div class="movelab" style="margin-top:0"><span data-i18n="extrude">Extrude</span></div>
+          <div style="display:grid; grid-template-rows:repeat(3, 1fr); gap:7px; flex:1">
+            <button class="zpad" id="btn_ext_up" style="width:100%; color:#fff; background:var(--accent); border-color:var(--accent)" onclick="extrude(1)">▲</button>
+            <div style="display:flex; justify-content:space-between; gap:2px;">
+              <button class="stepbtn ext on" id="estep1" onclick="setEStep(1)" style="flex:1; padding:0; font-size:11px; min-height:0">1</button>
+              <button class="stepbtn ext" id="estep10" onclick="setEStep(10)" style="flex:1; padding:0; font-size:11px; min-height:0">10</button>
+              <button class="stepbtn ext" id="estep50" onclick="setEStep(50)" style="flex:1; padding:0; font-size:11px; min-height:0">50</button>
+            </div>
+            <button class="zpad" id="btn_ext_dn" style="width:100%; color:var(--accent)" onclick="extrude(-1)">▼</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOOLHEAD -->
+    <div class="rpane" id="pane-tool" style="padding-top:0">
+      <div class="fhead">
+        <span class="muted" data-i18n="filament">Filament</span>
+        <span class="bt-status" id="btStatus" data-i18n-title="pinkbox" title="PinkBox spool manager">· PinkBox —</span>
+      </div>
+      <div class="slots" id="slots"></div>
+      <div class="filact">
+        <span class="muted"><span data-i18n="select">Select</span> <b style="color:var(--txt)" id="selTool">T0</b> · <span id="selMat" class="muted">—</span></span>
+        <span class="sp"></span>
+        <button class="lite" onclick="amsFil('unload')" data-i18n="unload">Unload</button>
+        <button class="lite green" onclick="amsFil('load')" data-i18n="load">Load</button>
+      </div>
+    </div>
+    </div> <!-- pane-device -->
+
+    <!-- CONSOLE -->
+    <div id="pane-console" style="display:none; flex-direction:column; height:calc(100% - 41px)">
+      <div id="con_log" style="flex:1; overflow-y:auto; padding:10px 14px; font-family:ui-monospace,monospace; font-size:12px; background:#0e1116; scroll-behavior:smooth"></div>
+      <div style="padding:10px 14px; background:var(--card); border-top:1px solid var(--line); position:sticky; bottom:0; z-index:10">
+        <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap">
+          <button class="chip" onclick="sendCon('FIRMWARE_RESTART')">FIRMWARE_RESTART</button>
+          <button class="chip" onclick="sendCon('QUAD_GANTRY_LEVEL')">QGL</button>
+          <button class="chip" onclick="sendCon('G28')">G28</button>
+          <button class="chip" onclick="sendCon('M84')">M84</button>
+          <label style="margin:auto 0 auto auto; display:flex; align-items:center; gap:6px; cursor:pointer"><input type="checkbox" id="con_hide_temp" checked style="width:auto"> <span data-i18n="hide_temp">Hide Temps</span></label>
+          <button class="objbtn" onclick="document.getElementById('con_log').innerHTML=''" style="margin:0" data-i18n="clear">Clear</button>
+        </div>
+        <div style="display:flex; gap:8px">
+          <input type="text" id="con_in" placeholder="Send G-code..." onkeydown="if(event.key==='Enter')sendConIn()" style="font-family:ui-monospace,monospace">
+          <button class="gbtn" style="padding:0 20px" onclick="sendConIn()">Send</button>
+        </div>
+      </div>
+    </div> <!-- pane-console -->
+
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="mbg" id="m_calib"><div class="modal">
+  <div class="mhead"><h2 data-i18n="calibration">Calibration</h2><button class="x" onclick="closeModal()">×</button></div>
+  <div class="mbody">
+    <div class="sect" data-i18n="quick_calib">Quick calibration</div>
+    <div class="chiprow">
+      <span class="chip" onclick="runMacro('QUAD_GANTRY_LEVEL')">QGL</span>
+      <span class="chip" onclick="runMacro('BED_MESH_CALIBRATE')">Bed Mesh</span>
+      <span class="chip" onclick="runMacro('CALIBRATE_ALL_OFFSETS')">Tool Offsets</span>
+      <span class="chip" onclick="runMacro('MEASURE_ALL_RESONANCE')">Input Shaper</span>
+      <span class="chip" onclick="runMacro('CALIBRATE_Z_ENDSTOP')">Z Endstop</span>
+      <span class="chip" onclick="runMacro('PID_ALL')">PID</span>
+      <span class="chip" onclick="runMacro('PA_TUNING')">PA Tuning</span>
+    </div>
+    <div class="sect"><span data-i18n="norestart_save">No-restart save</span> — <span data-i18n="tool">tool</span> <select id="cal_tool" onchange="loadCal()" style="width:auto;display:inline-block"></select>
+      <span id="cal_when" style="color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0"></span></div>
+    <div class="grid3">
+      <div><label>offset X</label><input id="cal_ox" type="number" step="0.0001"></div>
+      <div><label>offset Y</label><input id="cal_oy" type="number" step="0.0001"></div>
+      <div><label>offset Z</label><input id="cal_oz" type="number" step="0.0001"></div>
+      <div><label>pressure adv</label><input id="cal_pa" type="number" step="0.001"></div>
+      <div><label>shaper fx</label><input id="cal_fx" type="number" step="0.1"></div>
+      <div><label>shaper fy</label><input id="cal_fy" type="number" step="0.1"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="gbtn" style="padding:8px 14px" onclick="saveCal()" data-i18n="save_norestart">Save (no restart)</button>
+      <button class="lite" onclick="applyCal()" data-i18n="reapply">Re-apply</button>
+    </div>
+    <pre id="cal_out" style="margin-top:11px" data-i18n="cal_hint">// Runtime G-code applied on save (no SAVE_CONFIG, no restart)</pre>
+  </div>
+</div></div>
+
+<div class="mbg" id="m_parts"><div class="modal">
+  <div class="mhead"><h2 data-i18n="parts_title">Printer parts — tools / boards / recovery</h2><button class="x" onclick="closeModal()">×</button></div>
+  <div class="mbody">
+    <div class="sect" data-i18n="board_health">Toolboard health (click a dot to simulate failure)</div>
+    <div id="health"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="lite" onclick="scanBoards()">↻ Scan CAN</button>
+      <button class="lite" onclick="showSafeBoot()">Safe-boot cfg</button>
+      <button class="lite" onclick="diagnose()">⚕ Diagnose & recover</button>
+    </div>
+    <div id="dxbox"></div>
+    <div class="sect"><span data-i18n="toolheads">Toolheads</span> (<span id="tcount">0</span>)</div>
+    <div id="toolList" class="chiprow"></div>
+    <pre id="safeboot" style="display:none;margin-top:10px"></pre>
+
+    <div class="sect" data-i18n="maint_title">Nevermore filter / maintenance</div>
+    <div id="maint"></div>
+  </div>
+</div></div>
+
+<div class="mbg" id="m_opts"><div class="modal">
+  <div class="mhead"><h2 data-i18n="print_options">Print options</h2><button class="x" onclick="closeModal()">×</button></div>
+  <div class="mbody">
+    <div class="sect"><span data-i18n="detection_quality">Detection / quality</span>
+      <span style="float:right;font-weight:400;text-transform:none;letter-spacing:0">
+        <span data-i18n="language">Language</span>
+        <select id="langSel" onchange="setLang(this.value)" style="width:auto;display:inline-block;padding:3px 6px">
+          <option value="en">English</option></select></span></div>
+    <div id="options"></div>
+    <div class="sect" data-i18n="macros">Macros</div>
+    <div id="macros"></div>
+  </div>
+</div></div>
+
+<div class="mbg" id="m_objects"><div class="modal" style="width:min(440px,94vw)">
+  <div class="mhead"><h2><span data-i18n="skip_objects">Skip objects</span> <span class="hint" style="font-weight:400;color:var(--dim);font-size:12px">exclude_object</span></h2><button class="x" onclick="closeModal()">×</button></div>
+  <div class="mbody">
+    <div id="bedmap"></div>
+    <div class="hint" data-i18n="obj_hint" style="font-size:11px;color:var(--dim);margin:10px 0 6px">Tap an object on the bed map or list to skip just that object. Tap again to restore.</div>
+    <div id="objlist"></div>
+  </div>
+</div></div>
+
+<div class="mbg" id="m_speed"><div class="modal" style="width:min(360px,94vw)">
+  <div class="mhead"><h2 data-i18n="print_speed">Print speed</h2><button class="x" onclick="closeModal()">×</button></div>
+  <div class="mbody">
+    <div class="speed" id="speedPresets" style="gap:8px"></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:14px">
+      <label style="margin:0" data-i18n="custom">Custom</label>
+      <input id="speedCustom" type="number" min="10" max="300" step="5" style="width:90px" placeholder="%">
+      <button class="gbtn" style="padding:8px 14px" onclick="setSpeed(+document.getElementById('speedCustom').value)" data-i18n="apply">Apply</button>
+    </div>
+    <div class="hint" style="margin-top:8px;font-size:11px;color:var(--dim)"><span data-i18n="current">Current</span> <b id="speedCur" style="color:var(--txt)">100%</b> · <span data-i18n="via_m220">applied via M220</span></div>
+  </div>
+</div></div>
+
+<div class="mbg" id="m_fil"><div class="modal" style="width:min(440px,94vw)">
+  <div class="mhead"><h2><span data-i18n="ams_settings">AMS material settings</span> — <span id="fs_tool">T0</span></h2><button class="x" onclick="closeModal()">×</button></div>
+  <div class="mbody">
+    <div class="frow2"><label class="lbl" data-i18n="filament">Filament</label><select id="fs_preset" onchange="presetPick()" style="flex:1"></select></div>
+    <div class="frow2" style="align-items:flex-start"><label class="lbl" data-i18n="color">Color</label>
+      <div style="flex:1">
+        <span class="curswatch" id="fs_swatch" onclick="toggleColorPanel()" data-i18n-title="pick_color" title="Pick color"></span>
+        <div id="colorPanel" class="cpanel" style="display:none"></div>
+        <input type="hidden" id="fs_color">
+      </div></div>
+    <div class="frow2" style="align-items:flex-start"><label class="lbl"><span data-i18n="nozzle">Nozzle</span><br><span data-i18n="temp">temp</span></label>
+      <div style="display:flex;gap:14px;flex:1">
+        <div style="flex:1"><div class="capt" data-i18n="max">Max</div><div class="tempbox"><input id="fs_max" type="number"><span>℃</span></div></div>
+        <div style="flex:1"><div class="capt" data-i18n="min">Min</div><div class="tempbox"><input id="fs_min" type="number"><span>℃</span></div></div>
+      </div></div>
+    <div style="font-weight:600;margin:18px 0 10px" data-i18n="pa_factor">Pressure advance factor
+      <a href="#" onclick="return false" style="color:#3a7afe;text-decoration:none">Wiki</a></div>
+    <div class="frow2"><label class="lbl" data-i18n="pa_profile">PA profile</label>
+      <select id="fs_pap" onchange="paProfile()" style="flex:1"><option data-i18n="default" value="Default">Default</option><option data-i18n="manual_k" value="Manual (K)">Manual (K)</option></select></div>
+    <div class="frow2"><label class="lbl" data-i18n="factor_k">Factor K</label>
+      <input id="fs_k" type="number" step="0.001" style="flex:1"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="gbtn" style="padding:9px 18px;flex:0 0 auto" onclick="saveFilSettings()" data-i18n="confirm">Confirm</button>
+      <button class="lite" onclick="resetFilSettings()" data-i18n="reset">Reset</button>
+      <span style="flex:1"></span>
+      <button class="lite" onclick="closeModal()" data-i18n="close">Close</button>
+    </div>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---- demo data so the page is full even with NO server (file:// or offline) ---- */
+const DEMO_COLORS=["#e8553b","#efe3c8","#2b2b2b","#f0a13b","#2f7fe0","#1c1c1c"];
+const DEMO_MAT=["ABS","ABS","ABS","ABS","PETG","TPU"];
+const MAT_TEMP={PLA:210,PETG:240,ABS:250,ASA:250,TPU:230,NYLON:270};
+const DEMO_STATE={active:0,live:false,tools:[0,1,2,3,4].map(n=>({tool_number:n,name:"T"+n,board_type:n<5?"SHT36":"SHT36",canbus_uuid:"demo"+n+"abcd",offsets:{x:0,y:0,z:0}}))};
+const TYPE_TEMP={PLA:[190,230,0.02],PETG:[230,260,0.03],ABS:[240,280,0.02],ASA:[240,280,0.022],TPU:[210,240,0.05],NYLON:[260,300,0.045]};
+const DEMO_FIL=()=>{let o={};[0,1,2,3,4,5].forEach(n=>{const m=DEMO_MAT[n],t=TYPE_TEMP[m]||[200,250,0.02];
+  o[n]={material:m,color:DEMO_COLORS[n],present:true,preset:"Generic "+m,nozzle_min:t[0],nozzle_max:t[1],pa_profile:"Default",pa_k:t[2],
+    feeder:"bt",bt_prep:true,temp:25,target:0,print_temp:MAT_TEMP[m],sensor_entry:true,sensor_toolhead:true,
+    part_fan:[40,0,60,0,100,30][n],hotend_fan:[100,0,100,0,100,100][n],problem:false};});return o;};
+const DEMO={"/api/state":DEMO_STATE,"/api/filament":{materials:Object.keys(MAT_TEMP),tools:[0,1,2,3,4]},
+  "/api/filament/state":DEMO_FIL(),"/api/pinkbox":{present:false},
+  "/api/cameras":{cameras:[{id:"cam0",label:"Shuttle Cam",url:""},{id:"cam1",label:"Chamber Cam",url:""}]},
+  "/api/printer":{ok:false,state:"offline"},
+  "/api/controls":{live:false,bed:{temp:28,target:0},chamber:{temp:30,target:0},nevermore:{speed:0},speed_factor:100,presets:[50,100,125,150,200]},
+  "/api/macros":{count:6,groups:[{category:"Filament",items:[{name:"LOAD_T0"},{name:"UNLOAD_T0"}]},{category:"Calibrate",items:[{name:"QUAD_GANTRY_LEVEL"},{name:"BED_MESH_CALIBRATE"}]},{category:"Tools",items:[{name:"T0"},{name:"T1"}]}]},
+  "/api/health":Object.fromEntries([0,1,2,3,4,5].map(n=>[n,{online:true,uuid:"demo"+n}])),
+  "/api/filament/presets":{presets:[
+    ["Generic PLA","PLA",190,230,0.02],["Generic PLA Silk","PLA",190,230,0.02],["Generic PLA Matte","PLA",190,230,0.02],
+    ["Generic PLA High Speed","PLA-HS",200,240,0.018],["Generic PLA-CF","PLA-CF",210,240,0.025],
+    ["Generic PETG","PETG",230,260,0.03],["Generic PETG HF","PETG",230,260,0.03],["Generic PETG-CF","PETG-CF",240,270,0.032],
+    ["Generic ABS","ABS",240,280,0.02],["Generic ABS-GF","ABS-GF",250,280,0.022],["Generic ASA","ASA",240,280,0.022],["Generic ASA-CF","ASA-CF",250,285,0.024],
+    ["Generic TPU","TPU",210,240,0.05],["Generic TPU 95A","TPU",210,240,0.05],["Generic PC","PC",260,300,0.04],
+    ["Generic PA (Nylon)","PA",260,300,0.045],["Generic PA-CF","PA-CF",260,300,0.045],["Generic PET-CF","PET-CF",260,290,0.035],
+    ["Generic HIPS","HIPS",230,260,0.025],["Generic PVA","PVA",190,220,0.03],
+    ["Polymaker PolyTerra PLA","PLA",190,230,0.02],["Polymaker PolyLite PLA","PLA",190,230,0.02],["Polymaker PolyLite ABS","ABS",240,280,0.02],["Polymaker PolyMax PC","PC",260,300,0.04],
+    ["eSUN PLA+","PLA",190,230,0.02],["eSUN PETG","PETG",230,260,0.03],["eSUN ABS+","ABS",240,280,0.02],
+    ["Prusament PLA","PLA",190,230,0.02],["Prusament PETG","PETG",230,260,0.03],["Prusament ASA","ASA",240,280,0.022],
+    ["Hatchbox PLA","PLA",190,230,0.02],["Overture PLA","PLA",190,230,0.02],["Overture PETG","PETG",230,260,0.03],
+    ["SUNLU PLA","PLA",190,230,0.02],["Inland PLA","PLA",190,230,0.02]
+  ].map(a=>({name:a[0],type:a[1],nozzle_min:a[2],nozzle_max:a[3],pa_k:a[4]}))},
+  "/api/options":{options:[
+    {key:"clog_detection",value:true,label:"Clog Detection",desc:"Pause if extrusion occurs without filament movement"},
+    {key:"first_layer_detect",value:true,label:"First Layer Inspection",desc:"Verify first-layer quality with nozzle camera"},
+    {key:"spaghetti_detect",value:false,label:"Spaghetti Detection",desc:"Real-time print failure detection during printing"},
+    {key:"adaptive_bed_mesh",value:true,label:"Adaptive Bed Mesh",desc:"Probe only the active print area before each print"}]},
+  "/api/maintenance":{nevermore_runtime:"0m",total_print:"0m",filter_interval_h:50,filter_remaining:"50h 0m",filter_pct:0,filter_due:false},
+  "/api/objects":{live:false,bed:350,excluded:[],current:"center_spacer",objects:[
+    {name:"front_left_bracket",center:[90,95],polygon:[[60,65],[120,65],[120,125],[60,125]]},
+    {name:"front_right_gear",center:[255,95],polygon:[[225,65],[285,65],[285,125],[225,125]]},
+    {name:"rear_left_clip",center:[95,255],polygon:[[70,225],[120,225],[120,285],[70,285]]},
+    {name:"rear_right_mount",center:[255,258],polygon:[[220,225],[290,225],[290,290],[220,290]]},
+    {name:"center_spacer",center:[175,178],polygon:[[150,158],[200,158],[200,198],[150,198]]}]}};
+let OFFLINE=false;
+const TOKEN = document.querySelector('meta[name="api-token"]')?.content;
+
+async function api(p,o={}){
+  if(TOKEN){ o.headers=o.headers||{}; o.headers['Authorization']='Bearer '+TOKEN; }
+  o.cache = 'no-store';
+  try{ const r=await fetch(p,o); if(!r.ok) throw 0; return await r.json(); }
+  catch(e){ OFFLINE=true; const base=p.split("?")[0];
+    if(base in DEMO) return JSON.parse(JSON.stringify(DEMO[base]));
+    return {ok:false,detail:"offline",sent:false}; }
+}
+let STATE=DEMO_STATE, FIL={}, MATS=[], CAM="cam0", SEL=0, PINKBOX=false;
+/* Camera stream URLs are configured in cameras.json (empty URL shows placeholder).
+   Loaded from /api/cameras on boot; below are fallback defaults when opened offline. */
+let CAMERAS=[
+  {id:"cam0",label:"Shuttle Cam",url:""},
+  {id:"cam1",label:"Chamber Cam",url:""},
+];
+function toast(m,isErr){const t=document.getElementById('toast');t.textContent=m;
+  t.style.background=isErr?'var(--danger)':'';t.style.color=isErr?'#fff':'';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),isErr?3200:1600);}
+/* Toast helper: shows okMsg when live command succeeds, or failure notice otherwise */
+function ctlToast(r,okMsg){
+  if(OFFLINE || (r && r.sent)){ toast(okMsg); }
+  else { toast('⚠ '+tr('send_fail')+(r&&r.detail?' ('+r.detail+')':''), true); }
+}
+
+/* ===== i18n (default English, switchable to Korean in Options) ===== */
+const I18N={en:{
+  camera:"Camera",split:"Split",refresh:"Refresh",fullscreen:"Fullscreen",progress:"Print progress",
+  skip_objects:"Skip objects",total:"Total",elapsed:"Elapsed",remaining:"Left",idle:"idle",
+  pause:"Pause",resume:"Resume",stop:"Stop",control:"Control",speed_edit:"Print speed (click to edit)",
+  device:"Device",console:"Console",extrude:"Extrude",hide_temp:"Hide Temps",clear:"Clear",
+  parts:"Parts",options:"Options",calib:"Calib",active_nozzle:"Active mounted tool (click to set)",
+  nozzle:"Nozzle",bed_set:"Bed (click to set)",bed:"Bed",chamber_set:"Chamber (click to set)",chamber:"Chamber",
+  nevermore_set:"Nevermore (click to set)",nevermore:"Nevermore",lamp:"Lamp",move:"Move",step:"step",
+  filament:"Filament",pinkbox:"PinkBox spool manager",select:"Select",unload:"Unload",load:"Load",
+  calibration:"Calibration",quick_calib:"Quick calibration",norestart_save:"No-restart save",tool:"tool",
+  save_norestart:"Save (no restart)",reapply:"Re-apply",cal_hint:"// Runtime G-code applied on save (no SAVE_CONFIG, no restart)",
+  parts_title:"Printer parts — tools / boards / recovery",board_health:"Toolboard health (click a dot to simulate failure)",
+  toolheads:"Toolheads",maint_title:"Nevermore filter / maintenance",print_options:"Print options",
+  detection_quality:"Detection / quality",language:"Language",macros:"Macros",
+  obj_hint:"Tap an object on the bed map or list to skip just that object. Tap again to restore.",
+  print_speed:"Print speed",custom:"Custom",apply:"Apply",current:"Current",via_m220:"applied via M220",
+  ams_settings:"AMS material settings",color:"Color",pick_color:"Pick color",temp:"temp",max:"Max",min:"Min",
+  pa_factor:"Pressure advance factor",pa_profile:"PA profile",default:"Default",manual_k:"Manual (K)",
+  factor_k:"Factor K",confirm:"Confirm",reset:"Reset",close:"Close",c_other:"Other colors",c_custom:"Custom color",t_savefil:"material settings saved",
+  layer:"Layer",done:"done",hr:"h",minu:"m",pinkbox_on:"PinkBox connected",pinkbox_off:"No PinkBox (direct feed)",
+  printing:"printing",skip:"skip",skipped:"skipped",empty:"empty",entry:"entry",toolhead:"toolhead",fan:"fan",
+  detected:"detected",none:"none",part:"part",
+  entry_sensor:"Entry sensor",toolhead_sensor:"Toolhead sensor",part_fan:"Part cooling fan",hotend_fan:"Hotend (nozzle) fan",
+  fil_settings:"Filament settings",
+  opt_clog_detection:"Clog detection",opt_clog_detection_desc:"Pause if extrusion is commanded but filament doesn't move",
+  opt_first_layer_detect:"First-layer check",opt_first_layer_detect_desc:"Nozzle-cam first-layer quality check before continuing",
+  opt_spaghetti_detect:"Spaghetti detection",opt_spaghetti_detect_desc:"Real-time print-failure (spaghetti) detection",
+  opt_adaptive_bed_mesh:"Adaptive bed mesh",opt_adaptive_bed_mesh_desc:"Re-mesh only the print area each print",
+  mt_total:"Total print time",mt_nevermore:"Nevermore run time",mt_filter:"Filter life (interval",
+  mt_replace:"replace needed",mt_reset:"Filter replaced (reset)",mt_interval:"interval (h)",
+  dx_action:"action",dx_recommend:"recommend",dx_auto_ok:"Auto-recovery available",dx_hw_first:"Hardware check first (auto-restart held)",
+  not_saved:"not saved",saved:"saved",no_objects:"No objects defined (needs exclude_object labels in G-code)",
+  q_bed:"Bed target temp (℃)",q_chamber:"Chamber target temp (℃)",q_nevermore:"Nevermore filter speed (%)",q_nozzle:"Nozzle target temp (℃), tool",
+  q_skip:"Skip this object? (excluded from print)",
+  t_skip:"skipped",t_restore:"restored",t_step:"move step",t_speed:"print speed",t_save_norestart:"saved — applied live (no restart)",send_fail:"Not sent — printer not ready",
+  t_save_pid:"saved — PID needs 1 restart",t_reapply:"re-applied (no restart)",t_filter_reset:"Nevermore filter replaced",
+  rt:"runtime"
+}};
+let LANG=(function(){try{return localStorage.getItem('3dos_lang')||'en'}catch(e){return 'en'}})();
+function tr(k){return (I18N[LANG]&&I18N[LANG][k])||I18N.en[k]||k;}
+/* Camera label mapping */
+const CAM_LABELS={
+  "Nozzle Cam":{en:"Nozzle Cam"},
+  "Main Cam":{en:"Main Cam"},
+  "Shuttle Cam":{en:"Shuttle Cam"},
+  "Chamber Cam":{en:"Chamber Cam"}
+};
+function camLabel(l){const m=CAM_LABELS[l];return m?(m[LANG]||m.en):l;}
+function applyCamLabels(){
+  if(CAMERAS[0]&&document.getElementById('ct0'))document.getElementById('ct0').textContent=camLabel(CAMERAS[0].label);
+  if(CAMERAS[1]&&document.getElementById('ct1'))document.getElementById('ct1').textContent=camLabel(CAMERAS[1].label);
+}
+function applyI18n(){
+  document.documentElement.lang=LANG;
+  document.querySelectorAll('[data-i18n]').forEach(e=>{e.textContent=tr(e.dataset.i18n);});
+  document.querySelectorAll('[data-i18n-title]').forEach(e=>{e.title=tr(e.dataset.i18nTitle);});
+  const ls=document.getElementById('langSel'); if(ls)ls.value=LANG;
+}
+function setLang(l){LANG=l;try{localStorage.setItem('3dos_lang',l)}catch(e){} applyI18n(); reRenderDynamic();}
+function reRenderDynamic(){
+  if(typeof applyCamLabels==='function')applyCamLabels();
+  if(typeof renderCam==='function')renderCam();
+  if(typeof refreshSlots==='function')refreshSlots();
+  if(typeof poll==='function')poll();
+  if(document.getElementById('m_opts').classList.contains('show')){renderOptions();renderMacros();}
+  if(document.getElementById('m_parts').classList.contains('show')){renderHealth();renderToolList();renderMaint();}
+  if(document.getElementById('m_objects').classList.contains('show'))renderObjects();
+}
+
+async function boot(){
+  const f=await api('/api/filament'); MATS=f.materials;
+  STATE=await api('/api/state'); SEL=STATE.active??0; ACTIVE=STATE.active??0;
+  PINKBOX=(await api('/api/pinkbox')).present;
+  try{const cc=await api('/api/cameras');if(cc.cameras&&cc.cameras.length)CAMERAS=cc.cameras;}catch(e){}
+  applyCamLabels();
+  await loadPresets();
+  renderCam(); await refreshSlots(); fillCal(); poll(); applyI18n(); setInterval(poll,3000);
+}
+let ACTIVE=0;  // tool physically mounted on the shuttle
+
+/* right-panel tabs */
+function rtab(which){
+  document.getElementById('pane-device').style.display = which==='device'?'flex':'none';
+  document.getElementById('pane-console').style.display = which==='console'?'flex':'none';
+  document.getElementById('rt-device').classList.toggle('on',which==='device');
+  document.getElementById('rt-console').classList.toggle('on',which==='console');
+  if(which==='console') pollConsole();
+}
+
+/* Extrusion */
+let ESTEP=10;
+function setEStep(v){
+  ESTEP=v;
+  ['estep1','estep10','estep50'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  document.getElementById('estep'+v).classList.add('on');
+}
+async function extrude(sign){
+  const state = document.getElementById('pstate').textContent;
+  if(state !== 'ready' && state !== 'idle' && state !== 'done' && state !== 'offline' && state !== 'error' && state !== 'cancelled') {
+    toast('Cannot extrude while printing', true);
+    return;
+  }
+  const t = FIL[ACTIVE]||{};
+  const temp = t.temp || 0;
+  if(temp < 170) {
+    toast('Nozzle too cold to extrude (<170℃)', true);
+    return;
+  }
+  const len = sign * ESTEP;
+  const script = `SAVE_GCODE_STATE NAME=_e\nACTIVATE_EXTRUDER EXTRUDER=extruder${ACTIVE}\nM83\nG1 E${len} F300\nRESTORE_GCODE_STATE NAME=_e`;
+  gcode(script);
+  toast(`E ${len>0?'+':''}${len}mm (T${ACTIVE})`);
+}
+
+/* Console */
+let conHistory = [];
+let conHistIdx = -1;
+let lastConTime = 0;
+async function sendCon(cmd){
+  if(!cmd) return;
+  await gcode(cmd);
+  document.getElementById('con_in').value = '';
+}
+function sendConIn(){
+  const v = document.getElementById('con_in').value.trim();
+  if(v) {
+    conHistory.unshift(v);
+    conHistIdx = -1;
+    sendCon(v);
+  }
+}
+document.getElementById('con_in')?.addEventListener('keydown', e => {
+  if(e.key === 'ArrowUp') {
+    if(conHistIdx < conHistory.length - 1) { conHistIdx++; document.getElementById('con_in').value = conHistory[conHistIdx]; }
+    e.preventDefault();
+  } else if (e.key === 'ArrowDown') {
+    if(conHistIdx > 0) { conHistIdx--; document.getElementById('con_in').value = conHistory[conHistIdx]; }
+    else if(conHistIdx === 0) { conHistIdx = -1; document.getElementById('con_in').value = ''; }
+    e.preventDefault();
+  }
+});
+
+async function pollConsole(){
+  if(document.getElementById('pane-console').style.display === 'none') return;
+  const r = await api('/api/console');
+  if(!r.ok || !r.data || !r.data.result) return;
+  const logs = r.data.result.gcode_store || [];
+  let html = '';
+  const hideTemp = document.getElementById('con_hide_temp').checked;
+  let added = false;
+  logs.forEach(l => {
+    if(l.time <= lastConTime) return;
+    lastConTime = Math.max(lastConTime, l.time);
+    const msg = l.message;
+    if(hideTemp && (msg.startsWith('B:') || msg.startsWith('T0:'))) return;
+    let col = '#cfcfd6';
+    let pfx = '';
+    if(l.type === 'command') { col = '#ff2d7e'; pfx = '&gt; '; }
+    else if(msg.startsWith('!!')) { col = '#ff4d6a'; }
+    else if(msg.startsWith('//')) { col = '#f0a93b'; }
+    html += `<div style="color:${col}; margin-bottom:2px">${pfx}${msg.replace(/</g,'&lt;')}</div>`;
+    added = true;
+  });
+  if(added) {
+    const el = document.getElementById('con_log');
+    const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+    el.innerHTML += html;
+    if(isBottom) el.scrollTop = el.scrollHeight;
+  }
+}
+
+/* camera */
+function setCam(c){CAM=c;['ct0','ct1','ctS'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  document.getElementById(c==='split'?'ctS':(c==='cam0'?'ct0':'ct1')).classList.add('on');renderCam();}
+function ahnvibeBg(sub){return `<svg class="ph-bg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ahbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a0c14"/><stop offset=".5" stop-color="#1c0a16"/><stop offset="1" stop-color="#0c0509"/></linearGradient>
+    <radialGradient id="ahglow" cx=".5" cy=".4" r=".62"><stop offset="0" stop-color="#ff2d7e" stop-opacity=".34"/><stop offset="1" stop-color="#ff2d7e" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ahtxt" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff0f6"/><stop offset=".5" stop-color="#ff8fc0"/><stop offset="1" stop-color="#ff2d7e"/></linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#ahbg)"/><rect width="640" height="360" fill="url(#ahglow)"/>
+  <g fill="none" stroke="#ff2d7e" stroke-opacity=".13" stroke-width="2">
+    <path d="M-20 252 Q 160 202 320 252 T 660 252"/><path d="M-20 278 Q 160 228 320 278 T 660 278"/><path d="M-20 304 Q 160 254 320 304 T 660 304"/></g>
+  <g fill="#ff2d7e" fill-opacity=".18">${[...Array(6)].map((_,i)=>`<circle cx="${40+i*16}" cy="44" r="2.5"/>`).join('')}</g>
+  <text x="320" y="174" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,sans-serif" font-size="54" font-weight="800" letter-spacing="6" fill="url(#ahtxt)">AHNVIBE</text>
+  <rect x="288" y="194" width="64" height="3" rx="1.5" fill="#ff2d7e"/>
+  <text x="320" y="226" text-anchor="middle" font-family="-apple-system,'Segoe UI',Roboto,sans-serif" font-size="12" letter-spacing="5" fill="#a86b86">${sub}</text>
+</svg>`;}
+function feed(cam){
+  const inner=cam.url
+    ? `<img src="${cam.url}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div class="ph2" style="display:none">${ahnvibeBg('STREAM OFFLINE')}</div>`
+    : `<div class="ph2">${ahnvibeBg('CAMERA STANDBY')}</div>`;
+  return `<div class="feed"><span class="lbl">${camLabel(cam.label)}</span>${inner}</div>`;
+}
+function renderCam(){const s=document.getElementById('stage');
+  if(CAM==='split'){s.style.gridTemplateColumns='1fr 1fr';s.innerHTML=CAMERAS.map(feed).join('');}
+  else{s.style.gridTemplateColumns='1fr';s.innerHTML=feed(CAMERAS.find(c=>c.id===CAM)||CAMERAS[0]);}}
+function fsCam(){document.getElementById('stage').requestFullscreen?.();}
+
+/* jog */
+async function gcode(s){return api('/api/gcode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script:s})});}
+let STEP=10;  // Selected jog step distance (mm)
+function setStep(v){STEP=v;document.getElementById('stepLabel').textContent=v;
+  document.getElementById('step10').classList.toggle('on',v===10);
+  document.getElementById('step1').classList.toggle('on',v===1);
+  toast(tr('t_step')+' '+v+'mm');}
+function jogXY(dx,dy){gcode(`G91\nG1 X${dx*STEP} Y${dy*STEP} F6000\nG90`);toast(`X${dx*STEP} Y${dy*STEP}`);}
+function zMove(sign){const d=sign*STEP;gcode(`G91\nG1 Z${d} F600\nG90`);toast('Z '+(d>0?'+':'')+d+'mm');}  // Voron 2.4: gantry Z
+function homeAll(){gcode('G28');toast('Home All');}
+function lamp(){runMacro(document.getElementById('lamp').checked?'ALL_TOOL_LEDS_ON':'ALL_TOOL_LEDS_OFF');}
+
+/* temps + progress + controls */
+const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+let SPEED=100;
+async function poll(){ await pollControls(); await pollPrinter(); refreshSlots(); pollConsole(); PINKBOX=(await api('/api/pinkbox')).present; renderBtStatus(); }
+async function pollControls(){
+  const c=await api('/api/controls');
+  set('t_bed',c.bed.temp);set('t_bed_t',c.bed.target);
+  set('t_cha',c.chamber.temp);set('t_cha_t',c.chamber.target);
+  set('t_nev',(c.nevermore.speed||0)+'%');
+  SPEED=c.speed_factor||100; SPEED_PRESETS=c.presets||[50,100,125,150,200];
+  renderSpeedPresets(SPEED_PRESETS); updateSpeedChip();
+}
+let SPEED_PRESETS=[50,100,125,150,200];
+function updateSpeedChip(){const e=document.getElementById('speedNow');if(e)e.textContent=SPEED+'%';}
+async function pollPrinter(){
+  const p=await api('/api/printer'); const badge=document.getElementById('modeBadge');
+  set('noz_tool','T'+ACTIVE);
+
+  const af=FIL[ACTIVE]||{}; set('t_noz',af.temp??'—');set('t_noz_t',af.target??0);
+  if(p.ok&&p.data&&p.data.status){
+    badge.textContent='LIVE';badge.className='badge live';
+    const r=p.data.status,ps=r.print_stats||{};
+    const cur=ps.info?.current_layer||0,tot=ps.info?.total_layer||0;
+    const elapsed=ps.print_duration||0, prog=(r.display_status?.progress ?? r.virtual_sdcard?.progress ?? 0);
+    const total = prog>0.01 ? elapsed/prog : 0;
+    const remain = Math.max(0,total-elapsed);
+    updateProg(ps.filename||'—',Math.round(prog*100),cur,tot,ps.state||'ready',total,elapsed,remain);
+  }else{
+    badge.textContent='DRY-RUN';badge.className='badge dry';
+    set('t_noz','32');set('t_noz_t','0');
+    updateProg('—',0,0,0,tr('idle'),0,0,0);
+  }
+}
+function fmtT(sec){ if(sec==null)return '—'; sec=Math.round(sec); if(sec<1)return '0'+tr('minu');
+  const h=Math.floor(sec/3600),m=Math.round((sec%3600)/60); return h>0?`${h}${tr('hr')} ${m}${tr('minu')}`:`${m}${tr('minu')}`; }
+function updateProg(name,pct,cur,tot,state,total,elapsed,remain){
+  set('pname',name);document.getElementById('pbar').style.width=pct+'%';
+  document.getElementById('ppct').innerHTML=pct+'<span style="font-size:13px">%</span>';
+  set('player',`${tr('layer')} ${cur} / ${tot}`);set('pstate',state);
+  set('peta', pct>=100?tr('done'):'');
+  set('ptotal',fmtT(total));set('pelapsed',fmtT(elapsed));set('premain',pct>=100?tr('done'):fmtT(remain));
+}
+function renderSpeedPresets(presets){
+  document.getElementById('speedPresets').innerHTML=presets.map(p=>
+    `<button class="spbtn ${p===SPEED?'on':''}" onclick="setSpeed(${p})">${p}%</button>`).join('');
+}
+function pctl(m){runMacro(m);}
+
+/* Control setters (live G-code dispatch) */
+async function ctl(what,value,tool){
+  const r=await api('/api/controls/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({what,value,tool})});
+  return r;
+}
+async function setSpeed(pct){ if(!pct||pct<10)return; SPEED=pct;
+  updateSpeedChip(); renderSpeedPresets(SPEED_PRESETS);
+  const sc=document.getElementById('speedCur'); if(sc)sc.textContent=SPEED+'%';
+  const r=await ctl('speed',pct); if(OFFLINE)DEMO['/api/controls'].speed_factor=pct;
+  ctlToast(r, tr('t_speed')+' '+pct+'%'); closeModal(); }
+async function setBed(){ const v=prompt(tr('q_bed'),'60'); if(v===null)return;
+  const r=await ctl('bed',+v); if(OFFLINE){DEMO['/api/controls'].bed.target=+v;set('t_bed_t',+v);} ctlToast(r, tr('bed')+' → '+v+'℃'); }
+async function setChamber(){ const v=prompt(tr('q_chamber'),'50'); if(v===null)return;
+  const r=await ctl('chamber',+v); if(OFFLINE){DEMO['/api/controls'].chamber.target=+v;set('t_cha_t',+v);} ctlToast(r, tr('chamber')+' → '+v+'℃'); }
+async function setNevermore(){ const v=prompt(tr('q_nevermore'),'100'); if(v===null)return;
+  const r=await ctl('nevermore',+v); if(OFFLINE){DEMO['/api/controls'].nevermore.speed=+v;set('t_nev',+v+'%');} ctlToast(r, tr('nevermore')+' '+v+'%'); }
+async function setNozzle(){ const v=prompt(tr('q_nozzle')+' T'+ACTIVE,'250'); if(v===null)return;
+  const r=await ctl('nozzle',+v,ACTIVE); if(OFFLINE){FIL[ACTIVE]={...FIL[ACTIVE],target:+v};set('t_noz_t',+v);refreshSlots();} ctlToast(r, 'T'+ACTIVE+' '+tr('nozzle')+' → '+v+'℃'); }
+
+/* filament tiles */
+function textOn(hex){const h=hex.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return (0.299*r+0.587*g+0.114*b)>150?'#1f2329':'#ffffff';}
+const IC={
+  entry:'<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v6"/><path d="M5.5 6 8 8.5 10.5 6"/><path d="M3.5 12.5h9"/></svg>',
+  nozzle:'<svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor"><path d="M5 3h6v4l-3 6-3-6z"/></svg>',
+  fan:'<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="1.3"/><path d="M8 6.7C8 3.2 11 4.2 11 6.7M8 9.3C8 12.8 5 11.8 5 9.3M6.7 8C3.2 8 4.2 5 6.7 5M9.3 8C12.8 8 11.8 11 9.3 11"/></svg>',
+  bt:'<svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="8" r="2"/></svg>'
+};
+function footHtml(f){
+  const g='var(--accent)',r='var(--dim)';
+  return `<div class="ficons">
+    <span class="fi" style="color:${f.sensor_entry?g:r}" title="${tr('entry_sensor')}: ${f.sensor_entry?tr('detected'):tr('none')}">${IC.entry}</span>
+    <span class="fi" style="color:${f.sensor_toolhead?g:r}" title="${tr('toolhead_sensor')}: ${f.sensor_toolhead?tr('detected'):tr('none')}">${IC.nozzle}</span>
+    <span class="fi fanv" title="${tr('part_fan')}">${IC.fan}${f.part_fan??0}%</span>
+    <span class="fi fanv hot" title="${tr('hotend_fan')}">${IC.fan}${f.hotend_fan??0}%</span>
+  </div>`;
+}
+function slotHtml(n,f){
+  if(f.present){
+    const fg=textOn(f.color);const tt=`${f.temp} / ${f.target}℃`;
+    return `<div class="top" style="background:${f.color};color:${fg}">
+        <div class="m">${f.material}<span class="gear" onclick="event.stopPropagation();openFilSettings(${n})" title="${tr('fil_settings')}">⚙</span></div>
+        <div class="tmp">T${n} · ${tt}</div></div>
+      <div class="foot">${footHtml(f)}</div>`;
+  }
+  return `<div class="empty">⚠ T${n}
+      <span class="gear" onclick="event.stopPropagation();openFilSettings(${n})" title="${tr('fil_settings')}">⚙</span></div>
+    <div class="foot">${footHtml({sensor_entry:false,sensor_toolhead:false,part_fan:0,hotend_fan:0})}</div>`;
+}
+async function refreshSlots(){
+  if(!OFFLINE){
+    const r=await api('/api/filament/state');
+    if(r && Object.keys(r).length) FIL=r;
+  }
+  else if(!Object.keys(FIL).length) {
+    const r=await api('/api/filament/state');
+    if(r) FIL=r;
+  }
+  const c=document.getElementById('slots');
+  if(c.children.length !== STATE.tools.length) c.innerHTML='';
+  STATE.tools.forEach((t, i)=>{
+    const n=t.tool_number,f=FIL[n]||{material:'—',color:'#888',present:false};
+    let el = c.children[i];
+    if(!el) {
+      el = document.createElement('div');
+      el.onclick=()=>{SEL=n;document.getElementById('selTool').textContent='T'+n;refreshSlots();};
+      c.appendChild(el);
+    }
+    const cls = 'slot'+(n===SEL?' active':'')+(f.problem?' problem':'');
+    if(el.className !== cls) el.className = cls;
+    const fStr = JSON.stringify(f);
+    if(el.dataset.f !== fStr) {
+      el.dataset.f = fStr;
+      el.innerHTML = slotHtml(n,f);
+    }
+  });
+  const sf=FIL[SEL]||{};
+  document.getElementById('selTool').textContent='T'+SEL;
+  document.getElementById('selMat').textContent=sf.preset||sf.material||'—';
+  renderBtStatus();
+}
+function renderBtStatus(){
+  const el=document.getElementById('btStatus');
+  el.innerHTML = PINKBOX
+    ? `· <span class="on">${tr('pinkbox_on')}</span>`
+    : `· <span class="off">${tr('pinkbox_off')}</span>`;
+}
+async function amsFil(action){
+  const f=FIL[SEL]||{}; const material=f.material||'PLA';   // Load filament for the currently selected toolhead
+  await api('/api/filament/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:SEL,action,material})});
+  if(OFFLINE){
+    if(action==='unload') FIL[SEL]={...FIL[SEL],present:false,problem:true,part_fan:0,hotend_fan:0};
+    if(action==='load') FIL[SEL]={...FIL[SEL],present:true,problem:false,sensor_entry:true,sensor_toolhead:true,part_fan:30,hotend_fan:100};
+  }
+  refreshSlots();toast(action+' T'+SEL+' ('+material+')');
+}
+/* Filament settings modal (gear icon) — Bambu-style material configuration */
+let PRESETS=[];
+async function loadPresets(){PRESETS=(await api('/api/filament/presets')).presets;}
+const PALETTE=['#ffffff','#f5e14b','#c3e85b','#4cb748','#2e6b3e','#1f6f8b','#52d3a2','#7cd0f5',
+  '#4aa3f0','#2f5fe0','#322f7d','#7b3fe4','#e040d8','#c79de0','#e0667a','#e23b2e',
+  '#7a4a1e','#ef8b30','#f0e3c8','#cbb892','#b07d2e','#8a8a8a','#bdbdbd','#1c1c1c'];
+function openFilSettings(n){
+  SEL=n;const f=FIL[n]||{material:'PLA',color:'#888'};
+  document.getElementById('fs_tool').textContent='T'+n;
+  document.getElementById('fs_preset').innerHTML=PRESETS.map(p=>`<option ${p.name===f.preset?'selected':''}>${p.name}</option>`).join('');
+  // ensure temps/PA are populated even if missing — derive from the preset
+  const pre=PRESETS.find(p=>p.name===f.preset)||PRESETS[0]||{nozzle_min:200,nozzle_max:250,pa_k:0.02};
+  document.getElementById('fs_max').value=f.nozzle_max||pre.nozzle_max;
+  document.getElementById('fs_min').value=f.nozzle_min||pre.nozzle_min;
+  document.getElementById('fs_pap').value=f.pa_profile||'Default';
+  document.getElementById('fs_k').value=(f.pa_k??pre.pa_k);
+  selectColor(f.color||'#888888'); document.getElementById('colorPanel').style.display='none';
+  paProfile();
+  document.getElementById('m_fil').classList.add('show');
+}
+function presetPick(){const p=PRESETS.find(x=>x.name===document.getElementById('fs_preset').value);if(!p)return;
+  document.getElementById('fs_max').value=p.nozzle_max;document.getElementById('fs_min').value=p.nozzle_min;document.getElementById('fs_k').value=p.pa_k;}
+/* Stepped color picker (AMS + extended palette + custom) */
+function selectColor(hex){document.getElementById('fs_color').value=hex;document.getElementById('fs_swatch').style.background=hex;
+  document.querySelectorAll('#colorPanel .cdot').forEach(d=>d.classList.toggle('sel',d.dataset.c?.toLowerCase()===hex.toLowerCase()));}
+function toggleColorPanel(){const p=document.getElementById('colorPanel');
+  if(p.style.display==='none'){renderColorPanel();p.style.display='block';}else p.style.display='none';}
+function renderColorPanel(){
+  const cur=document.getElementById('fs_color').value;
+  const ams=[...new Set(STATE.tools.map(t=>(FIL[t.tool_number]||{}).color).filter(Boolean))];
+  const dot=h=>`<span class="cdot ${h.toLowerCase()===cur.toLowerCase()?'sel':''}" data-c="${h}" style="background:${h}" onclick="selectColor('${h}')"></span>`;
+  document.getElementById('colorPanel').innerHTML=`
+    <div class="clab">AMS</div><div class="crow">${ams.map(dot).join('')}</div>
+    <div class="clab">${tr('c_other')}</div><div class="cgrid">${PALETTE.map(dot).join('')}</div>
+    <div class="clab">${tr('c_custom')}</div>
+    <div class="custom"><input type="color" value="${cur}" oninput="selectColor(this.value)"></div>`;
+}
+function paProfile(){const manual=document.getElementById('fs_pap').value!=='Default';
+  document.getElementById('fs_k').disabled=!manual;document.getElementById('fs_k').style.opacity=manual?1:.5;}
+function resetFilSettings(){const p=PRESETS.find(x=>x.name===document.getElementById('fs_preset').value)||PRESETS[0];
+  presetPick();document.getElementById('fs_pap').value='Default';paProfile();}
+async function saveFilSettings(){
+  const n=SEL,body={tool:n,preset:document.getElementById('fs_preset').value,color:document.getElementById('fs_color').value,
+    nozzle_max:+document.getElementById('fs_max').value,nozzle_min:+document.getElementById('fs_min').value,
+    pa_profile:document.getElementById('fs_pap').value,pa_k:+document.getElementById('fs_k').value};
+  await api('/api/filament/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(OFFLINE){const p=PRESETS.find(x=>x.name===body.preset);FIL[n]={...FIL[n],preset:body.preset,color:body.color,
+    material:p?p.type.split('-')[0]:FIL[n].material,nozzle_min:body.nozzle_min,nozzle_max:body.nozzle_max,
+    pa_profile:body.pa_profile,pa_k:body.pa_k,print_temp:body.nozzle_max};}
+  closeModal();refreshSlots();toast('T'+n+' '+tr('t_savefil'));
+}
+
+/* modals */
+function openModal(w){document.getElementById('m_'+w).classList.add('show');
+  if(w==='parts'){renderHealth();renderToolList();renderMaint();}
+  if(w==='opts'){renderOptions();renderMacros();}if(w==='calib')fillCal();
+  if(w==='speed'){renderSpeedPresets(SPEED_PRESETS);const sc=document.getElementById('speedCur');if(sc)sc.textContent=SPEED+'%';document.getElementById('speedCustom').value=SPEED;}
+  if(w==='objects')renderObjects();}
+
+/* object skip — exclude_object */
+let OBJ={objects:[],excluded:[],current:null,bed:350};
+async function renderObjects(){
+  OBJ=await api('/api/objects');
+  const B=OBJ.bed||350, isExcl=n=>OBJ.excluded.includes(n);
+  // bed map (Y flipped: Klipper Y up)
+  let svg=`<svg viewBox="-10 -10 ${B+20} ${B+20}">
+    <rect x="0" y="0" width="${B}" height="${B}" fill="#16161b" stroke="#3a3a45" stroke-width="2"/>
+    <line x1="${B/2}" y1="0" x2="${B/2}" y2="${B}" stroke="#23232c" stroke-width="1"/>
+    <line x1="0" y1="${B/2}" x2="${B}" y2="${B/2}" stroke="#23232c" stroke-width="1"/>`;
+  (OBJ.objects||[]).forEach(o=>{
+    const pts=(o.polygon||[]).map(p=>`${p[0]},${B-p[1]}`).join(' ');
+    const ex=isExcl(o.name), cur=o.name===OBJ.current;
+    const fill=ex?'#e9eb0f':(cur?'#3a1c2c':'#dbeafe');
+    const stroke=ex?'#ff4d6a':(cur?'#ff2d7e':'#3a7afe');
+    svg+=`<polygon points="${pts}" fill="${ex?'#3a1c22':(cur?'#3a1c2c':'#e7eefc')}" stroke="${stroke}" stroke-width="2" style="cursor:pointer" onclick="toggleObject('${o.name}')"/>`;
+    if(ex){const c=o.center||[B/2,B/2];svg+=`<line x1="${c[0]-16}" y1="${B-c[1]-12}" x2="${c[0]+16}" y2="${B-c[1]+12}" stroke="#ff4d6a" stroke-width="2.5"/><line x1="${c[0]-16}" y1="${B-c[1]+12}" x2="${c[0]+16}" y2="${B-c[1]-12}" stroke="#ff4d6a" stroke-width="2.5"/>`;}
+    const c=o.center||[B/2,B/2];
+    svg+=`<text x="${c[0]}" y="${B-c[1]+3}" text-anchor="middle" font-size="11" fill="${ex?'#a32d2d':'#444'}" style="pointer-events:none">${o.name.length>12?o.name.slice(0,11)+'…':o.name}</text>`;
+  });
+  svg+=`</svg>`;
+  document.getElementById('bedmap').innerHTML=svg;
+  // list
+  const list=document.getElementById('objlist');
+  list.innerHTML=(OBJ.objects||[]).map(o=>{const ex=isExcl(o.name),cur=o.name===OBJ.current;
+    return `<div class="objrow ${ex?'excl':''}" onclick="toggleObject('${o.name}')">
+      <span class="nm">${o.name}</span>
+      ${cur&&!ex?`<span class="tag cur">${tr('printing')}</span>`:''}
+      <span class="tag ${ex?'skip':''}">${ex?tr('skipped')+' ↺':tr('skip')}</span></div>`;}).join('')
+    || `<div class="hint" style="color:var(--dim)">${tr('no_objects')}</div>`;
+}
+async function toggleObject(name){
+  const ex=OBJ.excluded.includes(name);
+  if(!ex && !confirm(`'${name}' — ${tr('q_skip')}`))return;
+  await api('/api/objects/exclude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,undo:ex})});
+  if(OFFLINE){const d=DEMO['/api/objects'];d.excluded=ex?d.excluded.filter(x=>x!==name):[...d.excluded,name];}
+  toast(name+' '+(ex?tr('t_restore'):tr('t_skip')));renderObjects();
+}
+
+/* output options toggles */
+async function renderOptions(){
+  const o=await api('/api/options');const c=document.getElementById('options');c.innerHTML='';
+  o.options.forEach(opt=>{const el=document.createElement('div');el.className='toggle';
+    el.innerHTML=`<div class="tinfo"><b>${tr('opt_'+opt.key)}</b><div>${tr('opt_'+opt.key+'_desc')}</div></div>
+      <label class="sw"><input type="checkbox" ${opt.value?'checked':''} onchange="setOption('${opt.key}',this.checked)"><i></i></label>`;
+    c.appendChild(el);});
+}
+async function setOption(key,value){
+  await api('/api/options/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});
+  if(OFFLINE){const o=DEMO['/api/options'].options.find(x=>x.key===key);if(o)o.value=value;}
+  toast(tr('opt_'+key)+': '+(value?'ON':'OFF'));
+}
+
+/* maintenance */
+async function renderMaint(){
+  const m=await api('/api/maintenance');const c=document.getElementById('maint');
+  c.innerHTML=`
+    <div class="mtrow"><span>${tr('mt_total')}</span><span class="v">${m.total_print}</span></div>
+    <div class="mtrow"><span>${tr('mt_nevermore')}</span><span class="v">${m.nevermore_runtime}</span></div>
+    <div class="mtrow" style="border:none"><span>${tr('mt_filter')} ${m.filter_interval_h}h)</span><span class="v" style="color:${m.filter_due?'var(--danger)':'var(--accent)'}">${m.filter_due?tr('mt_replace'):m.filter_remaining}</span></div>
+    <div class="lifebar ${m.filter_due?'due':''}"><i style="width:${Math.min(100,m.filter_pct)}%"></i></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+      <button class="lite" onclick="resetFilter()">${tr('mt_reset')}</button>
+      <span style="flex:1"></span>
+      <label class="muted">${tr('mt_interval')}</label>
+      <input id="mt_iv" type="number" value="${m.filter_interval_h}" style="width:70px" onchange="setInterval2(this.value)">
+    </div>`;
+}
+async function resetFilter(){await api('/api/maintenance/reset-filter',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  if(OFFLINE){DEMO['/api/maintenance'].nevermore_runtime='0'+tr('minu');DEMO['/api/maintenance'].filter_pct=0;DEMO['/api/maintenance'].filter_due=false;}renderMaint();toast(tr('t_filter_reset'));}
+async function setInterval2(h){await api('/api/maintenance/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({interval:+h})});
+  if(OFFLINE)DEMO['/api/maintenance'].filter_interval_h=+h;renderMaint();toast(tr('mt_interval')+' '+h+'h');}
+function closeModal(){document.querySelectorAll('.mbg').forEach(m=>m.classList.remove('show'));}
+document.querySelectorAll('.mbg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal();}));
+async function renderMacros(){const c=document.getElementById('macros');if(!c)return;const m=await api('/api/macros');c.innerHTML='';
+  m.groups.forEach(g=>{const d=document.createElement('div');d.className='tcat';
+    d.innerHTML=`<h4>${g.category} · ${g.items.length}</h4><div class="chiprow">`+g.items.map(it=>`<span class="chip" title="${(it.description||'').replace(/"/g,'')}" onclick="runMacro('${it.name}')">${it.name}</span>`).join('')+`</div>`;c.appendChild(d);});}
+async function runMacro(name){if(!OFFLINE&&STATE.live&&!confirm('Run '+name+' ?'))return;
+  const r=await api('/api/macros/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});toast(name+(r.sent?' sent':' (dry-run)'));}
+async function renderHealth(){const h=await api('/api/health');const c=document.getElementById('health');c.innerHTML='';
+  STATE.tools.forEach(t=>{const s=h[t.tool_number]||{online:true};const el=document.createElement('span');el.className='hchip'+(s.online?'':' off');
+    el.innerHTML=`<span class="hdot"></span>T${t.tool_number}`;el.onclick=()=>toggleBoard(t.canbus_uuid,!s.online);c.appendChild(el);});}
+async function toggleBoard(uuid,online){await api('/api/health/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uuid,online})});
+  if(OFFLINE){DEMO["/api/health"][STATE.tools.find(t=>t.canbus_uuid===uuid).tool_number].online=online;}renderHealth();toast(online?'online':'offline (sim)');}
+async function scanBoards(){await api('/api/health/scan');renderHealth();toast('scan done');}
+async function showSafeBoot(){const el=document.getElementById('safeboot');el.style.display='block';try{const r=await fetch('/api/safeboot');el.textContent=await r.text();}catch(e){el.textContent='(safe-boot cfg generated when server connected)';}}
+async function diagnose(){const r=await api('/api/recover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({error:'Lost communication with MCU SHT3'})});
+  const dx=r.diagnosis||{cause:'comm_lost',cause_text:'MCU communication lost',offline_tools:[3],recommended_fix:'check power/wiring then safe-boot',auto_restart_safe:true};
+  const acts=(r.planned_actions||['regenerate safe-boot','FIRMWARE_RESTART']).join(' → ');
+  document.getElementById('dxbox').innerHTML=`<pre style="border-color:${dx.auto_restart_safe?'var(--accent)':'var(--warn)'}">[${dx.cause}] ${dx.cause_text}
+offline: ${JSON.stringify(dx.offline_tools)}
+${tr('dx_action')}: ${acts}
+${tr('dx_recommend')}: ${dx.recommended_fix}
+${dx.auto_restart_safe?'✅ '+tr('dx_auto_ok'):'⚠ '+tr('dx_hw_first')}</pre>`;toast(dx.cause);}
+function renderToolList(){document.getElementById('tcount').textContent=STATE.tools.length;
+  document.getElementById('toolList').innerHTML=STATE.tools.map(t=>`<span class="chip">T${t.tool_number} · ${t.board_type} · ${(t.canbus_uuid||'').slice(0,8)}</span>`).join('');}
+
+/* calibration */
+function fillCal(){document.getElementById('cal_tool').innerHTML=STATE.tools.map(t=>`<option value="${t.tool_number}">T${t.tool_number}</option>`).join('');loadCal();}
+async function loadCal(){const n=document.getElementById('cal_tool').value;if(n==='')return;const c=await api('/api/calibration/'+n);
+  const v=(id,val)=>document.getElementById(id).value=(val??0);
+  if(c.offset_x!==undefined){v('cal_ox',c.offset_x);v('cal_oy',c.offset_y);v('cal_oz',c.offset_z);v('cal_pa',c.pressure_advance);v('cal_fx',c.shaper_freq_x);v('cal_fy',c.shaper_freq_y);
+    document.getElementById('cal_when').textContent=c.updated_at?(' · '+tr('saved')+' '+c.updated_at):' · '+tr('not_saved');}}
+async function saveCal(){const n=+document.getElementById('cal_tool').value;const g=id=>+document.getElementById(id).value;
+  const body={offset_x:g('cal_ox'),offset_y:g('cal_oy'),offset_z:g('cal_oz'),pressure_advance:g('cal_pa'),shaper_freq_x:g('cal_fx'),shaper_freq_y:g('cal_fy')};
+  const r=await api('/api/calibration/'+n,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(r.apply_gcode){document.getElementById('cal_out').textContent='; '+r.note+'\n'+r.apply_gcode.join('\n');toast(r.restart_required?tr('t_save_pid'):tr('t_save_norestart'));}
+  else{document.getElementById('cal_out').textContent='; (applied at runtime when server connected)\nSET_GCODE_OFFSET X='+body.offset_x+' Y='+body.offset_y+' Z='+body.offset_z+'\nSET_PRESSURE_ADVANCE ADVANCE='+body.pressure_advance;toast(tr('saved'));}}
+async function applyCal(){const n=document.getElementById('cal_tool').value;const r=await api('/api/calibration/'+n+'/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+  if(r.apply_gcode)document.getElementById('cal_out').textContent='; re-applied\n'+r.apply_gcode.join('\n');toast(tr('t_reapply'));}
+
+boot();
+</script>
+</body>
+</html>

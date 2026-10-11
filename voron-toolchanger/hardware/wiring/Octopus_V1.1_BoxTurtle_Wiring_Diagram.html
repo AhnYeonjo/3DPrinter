@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTT Octopus V1.1 - BoxTurtle 5-Lane Wiring Diagram</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; min-width: 1100px; }
+  h1 { text-align: center; font-size: 22px; color: #00d4ff; margin-bottom: 4px; letter-spacing: 1px; }
+  .subtitle { text-align: center; font-size: 13px; color: #888; margin-bottom: 20px; }
+  .diagram-wrap { display: flex; gap: 20px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+  .board { background: #16213e; border: 2px solid #0f3460; border-radius: 12px; padding: 20px; width: 420px; position: relative; }
+  .board-title { font-size: 16px; font-weight: 700; color: #e94560; margin-bottom: 2px; }
+  .board-sub { font-size: 11px; color: #666; margin-bottom: 14px; }
+  .section { margin-bottom: 16px; }
+  .section-title { font-size: 13px; font-weight: 600; color: #00d4ff; border-bottom: 1px solid #0f3460; padding-bottom: 3px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .section-title .icon { font-size: 15px; }
+  .pin-row { display: flex; align-items: center; gap: 0; margin-bottom: 3px; font-size: 12px; font-family: 'Consolas', 'Fira Code', monospace; }
+  .pin-label { width: 90px; color: #aaa; flex-shrink: 0; }
+  .pin-name { width: 70px; color: #ffd700; font-weight: 600; flex-shrink: 0; text-align: center; background: #1a1a2e; border-radius: 3px; padding: 1px 4px; margin: 0 4px; }
+  .pin-arrow { color: #555; margin: 0 2px; flex-shrink: 0; }
+  .pin-dest { color: #7fff7f; flex: 1; }
+  .pin-dest.sensor { color: #ff9f43; }
+  .pin-dest.uart { color: #a29bfe; }
+  .pin-dest.optional { color: #636e72; font-style: italic; }
+  .pin-dest.temp { color: #fd79a8; }
+
+  .conn-panel { width: 220px; display: flex; flex-direction: column; gap: 12px; align-self: stretch; justify-content: center; }
+  .lane-card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 10px 12px; position: relative; }
+  .lane-card .lane-num { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .lane-card .lane-num .t { color: #e94560; }
+  .lane-card .lane-num .l { color: #00d4ff; }
+  .lane-path { font-size: 10px; color: #888; line-height: 1.5; font-family: 'Consolas', monospace; }
+  .lane-path .s { color: #ff9f43; font-weight: 600; }
+  .lane-path .m { color: #7fff7f; font-weight: 600; }
+  .lane-path .u { color: #a29bfe; font-weight: 600; }
+
+  .color-lane0 { border-left: 4px solid #e94560; }
+  .color-lane1 { border-left: 4px solid #00d4ff; }
+  .color-lane2 { border-left: 4px solid #7fff7f; }
+  .color-lane3 { border-left: 4px solid #ffd700; }
+  .color-lane4 { border-left: 4px solid #a29bfe; }
+
+  .legend { margin-top: 20px; background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 14px 18px; max-width: 1080px; margin-left: auto; margin-right: auto; }
+  .legend-title { font-size: 13px; font-weight: 600; color: #00d4ff; margin-bottom: 8px; }
+  .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 20px; font-size: 11px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-color { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .lc-motor { background: #7fff7f; }
+  .lc-sensor { background: #ff9f43; }
+  .lc-uart { background: #a29bfe; }
+  .lc-temp { background: #fd79a8; }
+  .lc-opt { background: #636e72; }
+  .lc-pin { background: #ffd700; }
+
+  .flow-section { margin-top: 20px; max-width: 1080px; margin-left: auto; margin-right: auto; background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px 18px; }
+  .flow-title { font-size: 13px; font-weight: 600; color: #00d4ff; margin-bottom: 10px; }
+  .flow-diagram { font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.7; color: #ccc; white-space: pre; overflow-x: auto; }
+  .flow-diagram .highlight { color: #ffd700; font-weight: 600; }
+  .flow-diagram .sensor-h { color: #ff9f43; font-weight: 600; }
+  .flow-diagram .motor-h { color: #7fff7f; font-weight: 600; }
+  .flow-diagram .board-h { color: #e94560; font-weight: 600; }
+  .flow-diagram .tube-h { color: #a29bfe; }
+
+  .pin-table { width: 100%; margin-top: 20px; max-width: 1080px; margin-left: auto; margin-right: auto; }
+  .pin-table table { width: 100%; border-collapse: collapse; font-size: 11px; font-family: 'Consolas', monospace; background: #16213e; border-radius: 8px; overflow: hidden; }
+  .pin-table th { background: #0f3460; color: #00d4ff; padding: 6px 10px; text-align: left; font-size: 11px; font-weight: 600; }
+  .pin-table td { padding: 5px 10px; border-bottom: 1px solid #1a1a2e; }
+  .pin-table tr:last-child td { border-bottom: none; }
+  .pin-table .used { color: #7fff7f; }
+  .pin-table .avail { color: #636e72; }
+  .pin-table .port { color: #ffd700; font-weight: 600; }
+
+  .note { margin-top: 16px; max-width: 1080px; margin-left: auto; margin-right: auto; font-size: 11px; color: #666; text-align: center; }
+  .status-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+  .badge-active { background: #00b894; color: #fff; }
+  .badge-optional { background: #636e72; color: #ddd; }
+</style>
+</head>
+<body>
+
+<h1>BTT Octopus V1.1 — BoxTurtle 5-Lane Wiring Diagram</h1>
+<div class="subtitle">Voron 2.4 350mm AWD + StealthChanger 5-Tool | BoxTurtle Filament Loader | STM32F446 / USB</div>
+
+<div class="diagram-wrap">
+
+  <!-- ===== Octopus Board ===== -->
+  <div class="board">
+    <div class="board-title">BTT Octopus V1.1 (STM32F446)</div>
+    <div class="board-sub">USB Connection · Klipper · MCU Name: octopus</div>
+
+    <!-- Motor Ports -->
+    <div class="section">
+      <div class="section-title"><span class="icon">⚙</span> Motor Ports — Feeder Extruders (TMC2209)</div>
+
+      <div class="pin-row"><span class="pin-label">MOTOR_0</span><span class="pin-name">PF13</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane0 step</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">PF12</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane0 dir</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">!PF14</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane0 enable</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name uart">PC4</span><span class="pin-arrow">→</span><span class="pin-dest uart">TMC2209 UART (0.6A)</span></div>
+
+      <div style="height:6px"></div>
+      <div class="pin-row"><span class="pin-label">MOTOR_1</span><span class="pin-name">PG0</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane1 step</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">PG1</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane1 dir</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">!PF15</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane1 enable</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name uart">PD11</span><span class="pin-arrow">→</span><span class="pin-dest uart">TMC2209 UART (0.6A)</span></div>
+
+      <div style="height:6px"></div>
+      <div class="pin-row"><span class="pin-label">MOTOR_2</span><span class="pin-name">PF11</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane2 step</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">PG3</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane2 dir</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">!PG5</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane2 enable</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name uart">PC6</span><span class="pin-arrow">→</span><span class="pin-dest uart">TMC2209 UART (0.6A)</span></div>
+
+      <div style="height:6px"></div>
+      <div class="pin-row"><span class="pin-label">MOTOR_3</span><span class="pin-name">PG4</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane3 step</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">PC1</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane3 dir</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">!PA0</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane3 enable</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name uart">PC7</span><span class="pin-arrow">→</span><span class="pin-dest uart">TMC2209 UART (0.6A)</span></div>
+
+      <div style="height:6px"></div>
+      <div class="pin-row"><span class="pin-label">MOTOR_4</span><span class="pin-name">PF9</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane4 step</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">PF10</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane4 dir</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name">!PG2</span><span class="pin-arrow">→</span><span class="pin-dest">bt_lane4 enable</span></div>
+      <div class="pin-row"><span class="pin-label"></span><span class="pin-name uart">PF2</span><span class="pin-arrow">→</span><span class="pin-dest uart">TMC2209 UART (0.6A)</span></div>
+    </div>
+
+    <!-- Endstop / Sensor Ports -->
+    <div class="section">
+      <div class="section-title"><span class="icon">📡</span> Endstop Ports — Filament Sensors</div>
+
+      <div style="font-size:11px; color:#888; margin-bottom:6px; font-style:italic;">Entry Sensor (prep) — Spool -> BoxTurtle Inlet</div>
+      <div class="pin-row"><span class="pin-label">STOP_0</span><span class="pin-name">PG6</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane0_prep (L0 entry)</span></div>
+      <div class="pin-row"><span class="pin-label">STOP_1</span><span class="pin-name">PG9</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane1_prep (L1 entry)</span></div>
+      <div class="pin-row"><span class="pin-label">STOP_2</span><span class="pin-name">PG10</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane2_prep (L2 entry)</span></div>
+      <div class="pin-row"><span class="pin-label">STOP_3</span><span class="pin-name">PG11</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane3_prep (L3 entry)</span></div>
+      <div class="pin-row"><span class="pin-label">STOP_4</span><span class="pin-name">PG12</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane4_prep (L4 entry)</span></div>
+
+      <div style="height:8px"></div>
+      <div style="font-size:11px; color:#888; margin-bottom:6px; font-style:italic;">Outlet Sensor (hub) — BoxTurtle Outlet -> PTFE Tube</div>
+      <div class="pin-row"><span class="pin-label">STOP_5</span><span class="pin-name">PG13</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane0_hub (L0 outlet)</span></div>
+      <div class="pin-row"><span class="pin-label">STOP_6</span><span class="pin-name">PG14</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane1_hub (L1 outlet)</span></div>
+      <div class="pin-row"><span class="pin-label">STOP_7</span><span class="pin-name">PG15</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane2_hub (L2 outlet)</span></div>
+      <div class="pin-row"><span class="pin-label">EXP2</span><span class="pin-name">PB10</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane3_hub (L3 outlet)</span></div>
+      <div class="pin-row"><span class="pin-label">EXP2</span><span class="pin-name">PB11</span><span class="pin-arrow">→</span><span class="pin-dest sensor">bt_lane4_hub (L4 outlet)</span></div>
+    </div>
+
+    <!-- Temperature -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🌡</span> Temperature Sensor</div>
+      <div class="pin-row"><span class="pin-label">Internal MCU</span><span class="pin-name">—</span><span class="pin-arrow">→</span><span class="pin-dest temp">MCU_Octopus (0~100°C)</span></div>
+    </div>
+
+    <!-- Optional TurtleNeck -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🔧</span> TurtleNeck Buffer Sensors <span class="status-badge badge-optional">Optional</span></div>
+      <div style="font-size:11px; color:#888; margin-bottom:6px; font-style:italic;">advance sensor (over-feed detection) — 5 units</div>
+      <div class="pin-row"><span class="pin-label">MOTOR_5 ES</span><span class="pin-name">PG7</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane0_advance</span></div>
+      <div class="pin-row"><span class="pin-label">MOTOR_6 ES</span><span class="pin-name">PI8</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane1_advance</span></div>
+      <div class="pin-row"><span class="pin-label">MOTOR_7 ES</span><span class="pin-name">PI5</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane2_advance</span></div>
+      <div class="pin-row"><span class="pin-label">EXP1</span><span class="pin-name">PE12</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane3_advance</span></div>
+      <div class="pin-row"><span class="pin-label">EXP1</span><span class="pin-name">PE13</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane4_advance</span></div>
+
+      <div style="height:6px"></div>
+      <div style="font-size:11px; color:#888; margin-bottom:6px; font-style:italic;">trailing sensor (under-feed detection) — 5 units</div>
+      <div class="pin-row"><span class="pin-label">EXP1</span><span class="pin-name">PE15</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane0_trailing</span></div>
+      <div class="pin-row"><span class="pin-label">EXP1</span><span class="pin-name">PE10</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane1_trailing</span></div>
+      <div class="pin-row"><span class="pin-label">EXP1</span><span class="pin-name">PE7</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane2_trailing</span></div>
+      <div class="pin-row"><span class="pin-label">EXP1</span><span class="pin-name">PE8</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane3_trailing</span></div>
+      <div class="pin-row"><span class="pin-label">EXP1</span><span class="pin-name">PE11</span><span class="pin-arrow">→</span><span class="pin-dest optional">tn_lane4_trailing</span></div>
+    </div>
+  </div>
+
+  <!-- ===== Lane Cards ===== -->
+  <div class="conn-panel">
+    <div style="font-size:13px; font-weight:600; color:#00d4ff; text-align:center; margin-bottom:4px;">Per-Lane Connection Summary</div>
+
+    <div class="lane-card color-lane0">
+      <div class="lane-num"><span class="t">T0</span> / <span class="l">Lane 0</span> <span class="status-badge badge-active">Active</span></div>
+      <div class="lane-path">
+<span class="m">MOTOR_0</span> (PF13/PF12/PF14)<br>
+<span class="u">UART</span> PC4 · TMC2209 · 0.6A<br>
+<span class="s">STOP_0</span> PG6 → prep (entry)<br>
+<span class="s">STOP_5</span> PG13 → hub (outlet)<br>
+↔ extruder (SHT0)
+      </div>
+    </div>
+
+    <div class="lane-card color-lane1">
+      <div class="lane-num"><span class="t">T1</span> / <span class="l">Lane 1</span> <span class="status-badge badge-active">Active</span></div>
+      <div class="lane-path">
+<span class="m">MOTOR_1</span> (PG0/PG1/PF15)<br>
+<span class="u">UART</span> PD11 · TMC2209 · 0.6A<br>
+<span class="s">STOP_1</span> PG9 → prep (entry)<br>
+<span class="s">STOP_6</span> PG14 → hub (outlet)<br>
+↔ extruder1 (SHT1)
+      </div>
+    </div>
+
+    <div class="lane-card color-lane2">
+      <div class="lane-num"><span class="t">T2</span> / <span class="l">Lane 2</span> <span class="status-badge badge-active">Active</span></div>
+      <div class="lane-path">
+<span class="m">MOTOR_2</span> (PF11/PG3/PG5)<br>
+<span class="u">UART</span> PC6 · TMC2209 · 0.6A<br>
+<span class="s">STOP_2</span> PG10 → prep (entry)<br>
+<span class="s">STOP_7</span> PG15 → hub (outlet)<br>
+↔ extruder2 (SHT2)
+      </div>
+    </div>
+
+    <div class="lane-card color-lane3">
+      <div class="lane-num"><span class="t">T3</span> / <span class="l">Lane 3</span> <span class="status-badge badge-active">Active</span></div>
+      <div class="lane-path">
+<span class="m">MOTOR_3</span> (PG4/PC1/PA0)<br>
+<span class="u">UART</span> PC7 · TMC2209 · 0.6A<br>
+<span class="s">STOP_3</span> PG11 → prep (entry)<br>
+<span class="s">EXP2</span> PB10 → hub (outlet)<br>
+↔ extruder3 (SHT3)
+      </div>
+    </div>
+
+    <div class="lane-card color-lane4">
+      <div class="lane-num"><span class="t">T4</span> / <span class="l">Lane 4</span> <span class="status-badge badge-active">Active</span></div>
+      <div class="lane-path">
+<span class="m">MOTOR_4</span> (PF9/PF10/PG2)<br>
+<span class="u">UART</span> PF2 · TMC2209 · 0.6A<br>
+<span class="s">STOP_4</span> PG12 → prep (entry)<br>
+<span class="s">EXP2</span> PB11 → hub (outlet)<br>
+↔ extruder4 (SHT4)
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SHT36 Toolhead Sensors ===== -->
+  <div class="board" style="width: 380px;">
+    <div class="board-title">Fly SHT36 V3 × 5 (CAN Bus)</div>
+    <div class="board-sub">Via UTOC-3 · Per-Toolhead G2SA Runout Sensors</div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">📡</span> G2SA Runout Sensors (State Machine Managed)</div>
+      <div style="font-size:11px; color:#888; margin-bottom:6px; font-style:italic;">pause_on_runout: False · invokes _FILAMENT_RUNOUT_HANDLER</div>
+
+      <div style="font-size:11px; font-weight:600; color:#ff9f43; margin:8px 0 4px;">T0 — SHT0</div>
+      <div class="pin-row"><span class="pin-label">entry</span><span class="pin-name">gpio16</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T0_runout_entry (Pre-Gear)</span></div>
+      <div class="pin-row"><span class="pin-label">toolhead</span><span class="pin-name">gpio20</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T0_runout_toolhead (Post-Gear)</span></div>
+
+      <div style="font-size:11px; font-weight:600; color:#ff9f43; margin:8px 0 4px;">T1 — SHT1</div>
+      <div class="pin-row"><span class="pin-label">entry</span><span class="pin-name">gpio16</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T1_runout_entry (Pre-Gear)</span></div>
+      <div class="pin-row"><span class="pin-label">toolhead</span><span class="pin-name">gpio20</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T1_runout_toolhead (Post-Gear)</span></div>
+
+      <div style="font-size:11px; font-weight:600; color:#ff9f43; margin:8px 0 4px;">T2 — SHT2</div>
+      <div class="pin-row"><span class="pin-label">entry</span><span class="pin-name">gpio16</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T2_runout_entry (Pre-Gear)</span></div>
+      <div class="pin-row"><span class="pin-label">toolhead</span><span class="pin-name">gpio20</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T2_runout_toolhead (Post-Gear)</span></div>
+
+      <div style="font-size:11px; font-weight:600; color:#ff9f43; margin:8px 0 4px;">T3 — SHT3</div>
+      <div class="pin-row"><span class="pin-label">entry</span><span class="pin-name">gpio16</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T3_runout_entry (Pre-Gear)</span></div>
+      <div class="pin-row"><span class="pin-label">toolhead</span><span class="pin-name">gpio20</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T3_runout_toolhead (Post-Gear)</span></div>
+
+      <div style="font-size:11px; font-weight:600; color:#ff9f43; margin:8px 0 4px;">T4 — SHT4</div>
+      <div class="pin-row"><span class="pin-label">entry</span><span class="pin-name">gpio16</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T4_runout_entry (Pre-Gear)</span></div>
+      <div class="pin-row"><span class="pin-label">toolhead</span><span class="pin-name">gpio20</span><span class="pin-arrow">→</span><span class="pin-dest sensor">T4_runout_toolhead (Post-Gear)</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">🔄</span> State Machine Behavior</div>
+      <div style="font-size:11px; line-height:1.7; color:#aaa;">
+        <div style="display:flex; gap:8px; margin-bottom:2px;">
+          <span style="color:#e94560; width:80px; font-weight:600;">printing</span>
+          <span>Runout -> <strong style="color:#e94560;">PAUSE</strong> (Actual Depletion)</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:2px;">
+          <span style="color:#7fff7f; width:80px; font-weight:600;">loading</span>
+          <span>Runout -> <strong style="color:#7fff7f;">Ignore</strong> (Normal Entry)</span>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:2px;">
+          <span style="color:#ffd700; width:80px; font-weight:600;">unloading</span>
+          <span>Runout -> <strong style="color:#ffd700;">Ignore</strong> (Normal Retraction)</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <span style="color:#636e72; width:80px; font-weight:600;">idle</span>
+          <span>Runout -> <strong style="color:#636e72;">Warning Only</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Filament Path Flow ===== -->
+<div class="flow-section">
+  <div class="flow-title">Filament Path Diagram (Per Lane)</div>
+  <div class="flow-diagram">
+<span class="highlight">Spool</span>                   <span class="board-h">BoxTurtle (Octopus)</span>                         <span class="tube-h">PTFE Tube</span>               <span class="board-h">Toolhead (SHT36 V3)</span>
+  │                         │                                  │                        │
+  │    <span class="sensor-h">① bt_lane{N}_prep</span>    │   <span class="motor-h">⚙ bt_lane{N}</span>    <span class="sensor-h">② bt_lane{N}_hub</span>    │   <span class="sensor-h">③ T{N}_entry</span>   <span class="motor-h">⚙ G2SA</span>   <span class="sensor-h">④ T{N}_toolhead</span>
+  │    (Octopus STOP)    │   (MOTOR, TMC2209)  (Octopus STOP)   │   (SHT gpio16)  (Extruder)  (SHT gpio20)
+  ▼                      ▼                                      ▼                                          ▼
+┌──────┐  ┌────────┐  ┌──────────┐  ┌────────────┐  ┌────────────┐  ┌──────────┐  ┌─────────┐  ┌───────────┐  ┌──────┐
+│ Spool │──│<span class="sensor-h">Sensor1</span>│──│ <span class="motor-h">BT Motor</span> │──│  <span class="sensor-h">Sensor2</span>   │──│ <span class="tube-h">~PTFE~900mm</span>│──│  <span class="sensor-h">Sensor3</span> │──│<span class="motor-h">G2SA Gear</span>│──│  <span class="sensor-h">Sensor4</span>  │──│Nozzle │
+│       │  │Entry Det│  │Feeder Drv│  │Outlet (Hub)│  │  (~900mm)  │  │Pre-Gear  │  │ Gears  │  │Post-Gear   │  │ Print │
+└──────┘  └────────┘  └──────────┘  └────────────┘  └────────────┘  └──────────┘  └─────────┘  └───────────┘  └──────┘
+             <span class="board-h">Octopus</span>      <span class="board-h">Octopus</span>        <span class="board-h">Octopus</span>                        <span class="board-h">SHT36 V3</span>     <span class="board-h">SHT36 V3</span>      <span class="board-h">SHT36 V3</span>
+
+  Total Sensors: <span class="highlight">4 per lane</span> (2 on Octopus + 2 on SHT36) x 5 lanes = <span class="highlight">20 total</span>
+  </div>
+</div>
+
+<!-- ===== Pin Usage Summary ===== -->
+<div class="pin-table">
+  <div style="font-size:13px; font-weight:600; color:#00d4ff; margin-bottom:8px;">Octopus V1.1 Pin Usage Summary</div>
+  <table>
+    <tr><th>Port Group</th><th>Pins</th><th>Function</th><th>Status</th></tr>
+    <tr><td>MOTOR_0</td><td class="port">PF13, PF12, PF14, PC4</td><td class="used">bt_lane0 + TMC2209 UART</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>MOTOR_1</td><td class="port">PG0, PG1, PF15, PD11</td><td class="used">bt_lane1 + TMC2209 UART</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>MOTOR_2</td><td class="port">PF11, PG3, PG5, PC6</td><td class="used">bt_lane2 + TMC2209 UART</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>MOTOR_3</td><td class="port">PG4, PC1, PA0, PC7</td><td class="used">bt_lane3 + TMC2209 UART</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>MOTOR_4</td><td class="port">PF9, PF10, PG2, PF2</td><td class="used">bt_lane4 + TMC2209 UART</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>MOTOR_5~7</td><td class="port">—</td><td class="avail">Motors unused (Endstops reserved for TurtleNeck)</td><td><span class="status-badge badge-optional">Spare</span></td></tr>
+    <tr><td>STOP_0~4</td><td class="port">PG6, PG9~PG12</td><td class="used">Lane 0~4 Entry Sensors (prep)</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>STOP_5~7</td><td class="port">PG13~PG15</td><td class="used">Lane 0~2 Outlet Sensors (hub)</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>EXP2 (2-Pin)</td><td class="port">PB10, PB11</td><td class="used">Lane 3~4 Outlet Sensors (hub)</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>EXP1 (5-Pin)</td><td class="port">PE12, PE13, PE15, PE10, PE7</td><td class="avail">TurtleNeck advance/trailing</td><td><span class="status-badge badge-optional">Reserved</span></td></tr>
+    <tr><td>EXP1 (2-Pin)</td><td class="port">PE8, PE11</td><td class="avail">TurtleNeck trailing</td><td><span class="status-badge badge-optional">Reserved</span></td></tr>
+    <tr><td>MOTOR_5 ES</td><td class="port">PG7</td><td class="avail">TurtleNeck L0 advance</td><td><span class="status-badge badge-optional">Reserved</span></td></tr>
+    <tr><td>MOTOR_6 ES</td><td class="port">PI8</td><td class="avail">TurtleNeck L1 advance</td><td><span class="status-badge badge-optional">Reserved</span></td></tr>
+    <tr><td>MOTOR_7 ES</td><td class="port">PI5</td><td class="avail">TurtleNeck L2 advance</td><td><span class="status-badge badge-optional">Reserved</span></td></tr>
+    <tr><td>Internal Sensor</td><td class="port">—</td><td class="used">MCU Temperature Monitoring (0~100C)</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+  </table>
+</div>
+
+<!-- ===== Legend ===== -->
+<div class="legend">
+  <div class="legend-title">Legend</div>
+  <div class="legend-grid">
+    <div class="legend-item"><div class="legend-color lc-motor"></div><span>Motor Control Pins (Step/Dir/Enable)</span></div>
+    <div class="legend-item"><div class="legend-color lc-sensor"></div><span>Filament Sensor (Switch Sensor)</span></div>
+    <div class="legend-item"><div class="legend-color lc-uart"></div><span>TMC2209 UART Communication</span></div>
+    <div class="legend-item"><div class="legend-color lc-temp"></div><span>Temperature Sensor</span></div>
+    <div class="legend-item"><div class="legend-color lc-pin"></div><span>STM32 Pin Number</span></div>
+    <div class="legend-item"><div class="legend-color lc-opt"></div><span>Optional (TurtleNeck Buffer)</span></div>
+  </div>
+</div>
+
+<div class="note">
+  Voron 2.4 350mm AWD + 5-Tool StealthChanger + BoxTurtle 5-Lane · Mainboard: BTT Kraken V1.1 (Separate) · Toolboards: Fly SHT36 V3 x 5 (CAN bus)<br>
+  This diagram shows pin assignments for the dedicated BoxTurtle Octopus V1.1 controller. Refer to printer.cfg for BTT Kraken (XY/Z steppers, heaters, etc.).
+</div>
+
+</body>
+</html>

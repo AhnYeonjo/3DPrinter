@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+venv2/
+.venv/
+
+# Runtime & Logs
+*.log
+*.bak*
+*backup*
+tools.snapshot.json
+calibration.json
+options.json
+maintenance.json
+filament_state.json
+bt_saved_state.cfg
+printer-[0-9]*_[0-9]*.cfg
+
+# OS
+.DS_Store
+Thumbs.db

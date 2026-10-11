@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTT Kraken V1.0 - Voron 2.4 AWD Wiring Diagram (Official Pinout)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; min-width: 1100px; }
+  h1 { text-align: center; font-size: 22px; color: #e94560; margin-bottom: 4px; letter-spacing: 1px; }
+  .subtitle { text-align: center; font-size: 13px; color: #888; margin-bottom: 20px; }
+  .diagram-wrap { display: flex; gap: 16px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+
+  .board { background: #16213e; border: 2px solid #0f3460; border-radius: 12px; padding: 18px; position: relative; }
+  .board-title { font-size: 16px; font-weight: 700; color: #e94560; margin-bottom: 2px; }
+  .board-sub { font-size: 11px; color: #666; margin-bottom: 14px; }
+  .section { margin-bottom: 14px; }
+  .section-title { font-size: 13px; font-weight: 600; color: #00d4ff; border-bottom: 1px solid #0f3460; padding-bottom: 3px; margin-bottom: 7px; display: flex; align-items: center; gap: 6px; }
+  .section-title .icon { font-size: 15px; }
+
+  .pin-row { display: flex; align-items: center; gap: 0; margin-bottom: 3px; font-size: 12px; font-family: 'Consolas', 'Fira Code', monospace; }
+  .pin-label { width: 80px; color: #aaa; flex-shrink: 0; }
+  .pin-name { min-width: 55px; color: #ffd700; font-weight: 600; flex-shrink: 0; text-align: center; background: #1a1a2e; border-radius: 3px; padding: 1px 4px; margin: 0 4px; }
+  .pin-arrow { color: #555; margin: 0 2px; flex-shrink: 0; }
+  .pin-dest { color: #7fff7f; flex: 1; }
+  .pin-dest.sensor { color: #ff9f43; }
+  .pin-dest.spi { color: #a29bfe; }
+  .pin-dest.heater { color: #fd79a8; }
+  .pin-dest.fan { color: #74b9ff; }
+  .pin-dest.led { color: #55efc4; }
+  .pin-dest.servo { color: #fdcb6e; }
+  .pin-dest.unused { color: #636e72; font-style: italic; }
+  .pin-dest.calib { color: #e17055; }
+
+  .slot-header { font-size: 11px; font-weight: 600; padding: 3px 0 2px; border-top: 1px dotted #0f3460; margin-top: 5px; }
+  .slot-header:first-child { border-top: none; margin-top: 0; }
+  .slot-color-xy { color: #e94560; }
+  .slot-color-z { color: #00d4ff; }
+
+  .side-panel { display: flex; flex-direction: column; gap: 12px; width: 260px; }
+  .info-card { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 12px 14px; }
+  .info-card-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .info-card-title.red { color: #e94560; }
+  .info-card-title.blue { color: #00d4ff; }
+  .info-card-title.green { color: #55efc4; }
+  .info-card-title.orange { color: #ff9f43; }
+  .info-item { font-size: 11px; line-height: 1.7; color: #aaa; font-family: 'Consolas', monospace; }
+  .info-item .val { color: #ffd700; }
+  .info-item .note { color: #636e72; }
+
+  .status-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+  .badge-active { background: #00b894; color: #fff; }
+  .badge-unused { background: #636e72; color: #ddd; }
+  .badge-avail { background: #2d3436; color: #b2bec3; border: 1px solid #636e72; }
+
+  .full-width { max-width: 1100px; margin: 16px auto 0; }
+  .pin-table { width: 100%; }
+  .pin-table table { width: 100%; border-collapse: collapse; font-size: 11px; font-family: 'Consolas', monospace; background: #16213e; border-radius: 8px; overflow: hidden; }
+  .pin-table th { background: #0f3460; color: #00d4ff; padding: 6px 10px; text-align: left; font-weight: 600; }
+  .pin-table td { padding: 5px 10px; border-bottom: 1px solid #1a1a2e; }
+  .pin-table tr:last-child td { border-bottom: none; }
+  .pin-table .port { color: #ffd700; font-weight: 600; }
+  .pin-table .used { color: #7fff7f; }
+  .pin-table .avail { color: #636e72; }
+
+  .flow-section { background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 16px 18px; }
+  .flow-title { font-size: 13px; font-weight: 600; color: #00d4ff; margin-bottom: 10px; }
+  .flow-diagram { font-family: 'Consolas', monospace; font-size: 11px; line-height: 1.6; color: #ccc; white-space: pre; overflow-x: auto; }
+  .flow-diagram .h-red { color: #e94560; font-weight: 600; }
+  .flow-diagram .h-blue { color: #00d4ff; font-weight: 600; }
+  .flow-diagram .h-green { color: #7fff7f; font-weight: 600; }
+  .flow-diagram .h-yellow { color: #ffd700; font-weight: 600; }
+  .flow-diagram .h-pink { color: #fd79a8; font-weight: 600; }
+  .flow-diagram .h-orange { color: #ff9f43; font-weight: 600; }
+  .flow-diagram .h-purple { color: #a29bfe; font-weight: 600; }
+
+  .note { margin-top: 14px; font-size: 11px; color: #666; text-align: center; }
+  .legend { margin-top: 16px; background: #16213e; border: 1px solid #0f3460; border-radius: 8px; padding: 12px 16px; }
+  .legend-title { font-size: 13px; font-weight: 600; color: #00d4ff; margin-bottom: 6px; }
+  .legend-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px 16px; font-size: 11px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-color { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<h1>BTT Kraken V1.0 — Voron 2.4 350mm AWD Wiring Diagram</h1>
+<div class="subtitle">STM32H723ZGT6 · 8× TMC5160 Onboard · 48V HV · SPI Bus · Sensorless Homing · MCU: [mcu] (Primary)</div>
+
+<div class="diagram-wrap">
+
+  <!-- ===== LEFT: Motor Slots ===== -->
+  <div class="board" style="width: 440px;">
+    <div class="board-title">Motor Slots S1–S8 (TMC5160 SPI)</div>
+    <div class="board-sub">All 8 Slots Used · S1-S4: 0.050Ω (V1.0) · S5-S8: 0.075Ω · SPI: PC6/PC7/PC8</div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚙</span> XY AWD Motors (S1–S4) — CoreXY 4-Motor Drive</div>
+
+      <div class="slot-header slot-color-xy">S1 → stepper_x (B1: Rear Right) · 48V · 1.0A</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PC14</span><span class="pin-arrow">→</span><span class="pin-dest">B1 Motor 42STH48-2004MAH</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">PC13</span><span class="pin-arrow">→</span><span class="pin-dest">(Inverted mount, no !)</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PE6</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PD6</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+      <div class="pin-row"><span class="pin-label">diag1</span><span class="pin-name">^!PC15</span><span class="pin-arrow">→</span><span class="pin-dest sensor">Sensorless Homing X (SGT:1)</span></div>
+
+      <div class="slot-header slot-color-xy">S2 → stepper_y (A1: Rear Left) · 48V · 1.0A</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PE5</span><span class="pin-arrow">→</span><span class="pin-dest">A1 Motor 42STH48-2004MAH</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">PE4</span><span class="pin-arrow">→</span><span class="pin-dest">(Inverted mount, no !)</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PE3</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PD5</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+      <div class="pin-row"><span class="pin-label">diag1</span><span class="pin-name">^!PF0</span><span class="pin-arrow">→</span><span class="pin-dest sensor">Sensorless Homing Y (SGT:1)</span></div>
+
+      <div class="slot-header slot-color-xy">S3 → stepper_x1 (B2: Front Right, AWD) · 48V · 1.0A</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PE2</span><span class="pin-arrow">→</span><span class="pin-dest">B2 Motor 42STH48-2004MAH</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">PE1</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PE0</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PD4</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+      <div class="pin-row"><span class="pin-label">endstop</span><span class="pin-name">PF1</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Synced to stepper_x)</span></div>
+
+      <div class="slot-header slot-color-xy">S4 → stepper_y1 (A2: Front Left, AWD) · 48V · 1.0A</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PB9</span><span class="pin-arrow">→</span><span class="pin-dest">A2 Motor 42STH48-2004MAH</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">PB8</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PB7</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PD3</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+      <div class="pin-row"><span class="pin-label">endstop</span><span class="pin-name">PF2</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Synced to stepper_y)</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span class="icon">⚙</span> Z Motors (S5–S8) — Belt Z 4-Motor Drive</div>
+
+      <div class="slot-header slot-color-z">S5 → stepper_z (Z0: Front Left) · 48V · 0.8A · 80:16</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PG9</span><span class="pin-arrow">→</span><span class="pin-dest">Z0 LDO-42STH48-2004AC</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">!PG10</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PG13</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PD2</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+      <div class="pin-row"><span class="pin-label">endstop</span><span class="pin-name">PF3</span><span class="pin-arrow">→</span><span class="pin-dest calib">SexBolt [tools_calibrate] ^!PF3 (NC Assembly -> Inverted)</span></div>
+      <div class="pin-row"><span class="pin-label">Z home</span><span class="pin-name">—</span><span class="pin-arrow">→</span><span class="pin-dest sensor">^PF4 Physical Z-Max Endstop (Upper Chamber, homing_positive_dir)</span></div>
+
+      <div class="slot-header slot-color-z">S6 → stepper_z1 (Z1: Rear Left) · 48V · 0.8A · 80:16</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PG11</span><span class="pin-arrow">→</span><span class="pin-dest">Z1 LDO-42STH48-2004AC</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">PD7</span><span class="pin-arrow">→</span><span class="pin-dest">(No ! — Rear Inverted)</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PG12</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PA15</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+      <div class="pin-row"><span class="pin-label">endstop</span><span class="pin-name">PF4</span><span class="pin-arrow">→</span><span class="pin-dest sensor">Physical Z-Max Endstop (Upper Chamber Microswitch, ^PF4)</span></div>
+
+      <div class="slot-header slot-color-z">S7 → stepper_z2 (Z2: Rear Right) · 48V · 0.8A · 80:16</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PB4</span><span class="pin-arrow">→</span><span class="pin-dest">Z2 LDO-42STH48-2004AC</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">!PB3</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PB5</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PA9</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+
+      <div class="slot-header slot-color-z">S8 → stepper_z3 (Z3: Front Right) · 48V · 0.8A · 80:16</div>
+      <div class="pin-row"><span class="pin-label">step</span><span class="pin-name">PG15</span><span class="pin-arrow">→</span><span class="pin-dest">Z3 LDO-42STH48-2004AC</span></div>
+      <div class="pin-row"><span class="pin-label">dir</span><span class="pin-name">PB6</span><span class="pin-arrow">→</span><span class="pin-dest">(No ! — Front Normal)</span></div>
+      <div class="pin-row"><span class="pin-label">enable</span><span class="pin-name">!PG14</span></div>
+      <div class="pin-row"><span class="pin-label">CS</span><span class="pin-name spi">PA10</span><span class="pin-arrow">→</span><span class="pin-dest spi">TMC5160 SPI</span></div>
+    </div>
+  </div>
+
+  <!-- ===== CENTER: Peripherals ===== -->
+  <div class="board" style="width: 380px;">
+    <div class="board-title">Peripherals (Heaters · Fans · Sensors · Servo · LEDs)</div>
+    <div class="board-sub">Onboard Kraken Heater / Fan / Sensor Ports</div>
+
+    <!-- Heaters -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🔥</span> Heater Outputs</div>
+      <div class="pin-row"><span class="pin-label">BED-OUT</span><span class="pin-name">PF5</span><span class="pin-arrow">→</span><span class="pin-dest heater">heater_bed (AC SSR)</span></div>
+      <div class="pin-row"><span class="pin-label">HE0</span><span class="pin-name">PF6</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Hotend -> SHT36)</span></div>
+      <div class="pin-row"><span class="pin-label">HE1</span><span class="pin-name">PF7</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused</span></div>
+      <div class="pin-row"><span class="pin-label">HE2</span><span class="pin-name">PF9</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused</span></div>
+      <div class="pin-row"><span class="pin-label">HE3</span><span class="pin-name">PF8</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused</span></div>
+    </div>
+
+    <!-- Temperature -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🌡</span> Temperature Sensors</div>
+      <div class="pin-row"><span class="pin-label">THB</span><span class="pin-name">PB0</span><span class="pin-arrow">→</span><span class="pin-dest sensor">heater_bed Thermistor</span></div>
+      <div class="pin-row"><span class="pin-label">TH0</span><span class="pin-name">PB1</span><span class="pin-arrow">→</span><span class="pin-dest sensor">Chamber Temperature Sensor (Chamber)</span></div>
+      <div class="pin-row"><span class="pin-label">TH1</span><span class="pin-name">PC5</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Thermistor -> SHT36)</span></div>
+      <div class="pin-row"><span class="pin-label">TH2</span><span class="pin-name">PC4</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused</span></div>
+      <div class="pin-row"><span class="pin-label">TH3</span><span class="pin-name">PA7</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused</span></div>
+      <div class="pin-row"><span class="pin-label">MCU</span><span class="pin-name">—</span><span class="pin-arrow">→</span><span class="pin-dest sensor">MCU_Kraken Internal Temp</span></div>
+      <div class="pin-row"><span class="pin-label">Host</span><span class="pin-name">—</span><span class="pin-arrow">→</span><span class="pin-dest sensor">Raspberry_Pi Host Temp</span></div>
+    </div>
+
+    <!-- Fans -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🌀</span> Fan Ports (5V/12V/24V Jumper, Max 1A/Port)</div>
+      <div class="pin-row"><span class="pin-label">FAN0</span><span class="pin-name">PA0</span><span class="pin-arrow">→</span><span class="pin-dest fan">Electronics Bay Fan 1 (controller_fan)</span></div>
+      <div class="pin-row"><span class="pin-label">FAN1</span><span class="pin-name">PA1</span><span class="pin-arrow">→</span><span class="pin-dest fan">Electronics Bay Fan 2 (controller_fan)</span></div>
+      <div class="pin-row"><span class="pin-label">FAN2</span><span class="pin-name">PA2</span><span class="pin-arrow">→</span><span class="pin-dest fan">Chamber Exhaust Fan (exhaust_fan)</span></div>
+      <div class="pin-row"><span class="pin-label">FAN3</span><span class="pin-name">PA3</span><span class="pin-arrow">→</span><span class="pin-dest fan">Nevermore Filter Fans (chamber_filter_fan) x3 Parallel</span></div>
+      <div class="pin-row"><span class="pin-label">FAN4</span><span class="pin-name">PA4</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Spare)</span></div>
+      <div class="pin-row"><span class="pin-label">FAN5</span><span class="pin-name">PA5</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Spare)</span></div>
+      <div class="pin-row"><span class="pin-label">FAN6 4-Pin</span><span class="pin-name">PA6</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (tacho: PC1)</span></div>
+      <div class="pin-row"><span class="pin-label">FAN7 4-Pin</span><span class="pin-name">PE8</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (tacho: PG0)</span></div>
+    </div>
+
+    <!-- Servo -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🦾</span> Servo / Probe</div>
+      <div class="pin-row"><span class="pin-label">SERVO</span><span class="pin-name">PE7</span><span class="pin-arrow">→</span><span class="pin-dest servo">leafcutter_servo (Gantry Servo)</span></div>
+      <div class="pin-row"><span class="pin-label">BLTouch</span><span class="pin-name">PE9</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Eddy Duo = USB)</span></div>
+      <div class="pin-row"><span class="pin-label">Probe</span><span class="pin-name">PD11</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused</span></div>
+    </div>
+
+    <!-- LED -->
+    <div class="section">
+      <div class="section-title"><span class="icon">💡</span> Neopixel LED</div>
+      <div class="pin-row"><span class="pin-label">NEO 1</span><span class="pin-name">PF12</span><span class="pin-arrow">→</span><span class="pin-dest led">chamber_light (WS2812B ×30)</span></div>
+      <div class="pin-row"><span class="pin-label">NEO 2</span><span class="pin-name">PF11</span><span class="pin-arrow">→</span><span class="pin-dest unused">Unused (Spare LED Port)</span></div>
+    </div>
+
+    <!-- Calibration -->
+    <div class="section">
+      <div class="section-title"><span class="icon">🎯</span> Calibration</div>
+      <div class="pin-row"><span class="pin-label">SexBolt</span><span class="pin-name">PF3</span><span class="pin-arrow">→</span><span class="pin-dest calib">[tools_calibrate] Microswitch ^!PF3 (NC -> Inverted)</span></div>
+      <div class="pin-row"><span class="pin-label">Z max</span><span class="pin-name">PF4</span><span class="pin-arrow">→</span><span class="pin-dest sensor">Physical Z-Max Endstop (Upper Chamber, Toolless Z Homing)</span></div>
+      <div style="font-size:10px; color:#888; margin-top:2px; margin-left:4px;">S5 Endstop = SexBolt / S6 Endstop = Z Max (homing_positive_dir: True)</div>
+    </div>
+
+    <!-- Eddy / USB -->
+    <div class="section">
+      <div class="section-title"><span class="icon">📡</span> USB Devices (Independent of Kraken Pins)</div>
+      <div class="pin-row"><span class="pin-label">Eddy Duo</span><span class="pin-name">USB</span><span class="pin-arrow">→</span><span class="pin-dest sensor">btt_eddy MCU (RP2040, Dedicated USB)</span></div>
+      <div class="pin-row"><span class="pin-label">Nozzle Cam</span><span class="pin-name">USB</span><span class="pin-arrow">→</span><span class="pin-dest unused">Shuttle Mounted (Crowsnest)</span></div>
+      <div class="pin-row"><span class="pin-label">C920E</span><span class="pin-name">USB</span><span class="pin-arrow">→</span><span class="pin-dest unused">Chamber Monitoring Webcam (Crowsnest)</span></div>
+      <div class="pin-row"><span class="pin-label">UTOC-3</span><span class="pin-name">USB</span><span class="pin-arrow">→</span><span class="pin-dest spi">CAN bus → SHT36 V3 ×5</span></div>
+    </div>
+  </div>
+
+  <!-- ===== RIGHT: Summary Cards ===== -->
+  <div class="side-panel">
+
+    <div class="info-card">
+      <div class="info-card-title red">AWD Motor Layout (Top-Down Plan View)</div>
+      <div class="flow-diagram" style="font-size:11px; line-height:1.5;">
+      Y=350 (Rear)
+  ┌──────────────────────────┐
+  │ <span class="h-red">A1(S2)</span>            <span class="h-red">B1(S1)</span> │
+  │ stepper_y      stepper_x │
+  │                          │
+  │         [Gantry]          │
+  │                          │
+  │ <span class="h-red">A2(S4)</span>            <span class="h-red">B2(S3)</span> │
+  │ stepper_y1    stepper_x1 │
+  └──────────────────────────┘
+      Y=0 (Front, Dock Side)
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title blue">Z Motor Layout (Belt Z)</div>
+      <div class="flow-diagram" style="font-size:11px; line-height:1.5;">
+      Y=350 (Rear)
+  ┌──────────────────────────┐
+  │ <span class="h-blue">Z1(S6)</span>            <span class="h-blue">Z2(S7)</span> │
+  │ Rear Left     Rear Right  │
+  │                          │
+  │           [Bed]           │
+  │                          │
+  │ <span class="h-blue">Z0(S5)</span>            <span class="h-blue">Z3(S8)</span> │
+  │ Front Left    Front Right │
+  └──────────────────────────┘
+      Y=0 (Front)
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title green">SPI Bus (Shared)</div>
+      <div class="info-item">
+SCLK: <span class="val">PC6</span>
+MOSI: <span class="val">PC8</span>
+MISO: <span class="val">PC7</span>
+<span class="note">All S1~S8 TMC5160 drivers share SPI3;
+individually selected via CS pins</span>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title orange">Sensorless Homing</div>
+      <div class="info-item">
+X: <span class="val">^!PC15</span> (S1 diag1)
+Y: <span class="val">^!PF0</span>  (S2 diag1)
+SGT: <span class="val">1</span>
+Homing Current: <span class="val">0.49A</span>
+Driver: <span class="val">tmc5160</span>
+Rebound Y: <span class="val">20mm</span>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <div class="info-card-title red">Power Architecture</div>
+      <div class="info-item">
+MOTOR-POWER: <span class="val">VIN+GND+HV</span> (48V PSU)
+POWER:       <span class="val">VIN+GND</span> (12-24V)
+BED-POWER:   <span class="val">VIN+GND</span> (Dedicated 12-24V)
+Fan Jumpers:     <span class="val">5V/12V/24V Selectable</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== Full Width: Pin Usage Table ===== -->
+<div class="full-width pin-table">
+  <div style="font-size:13px; font-weight:600; color:#00d4ff; margin-bottom:8px;">Kraken V1.1 Complete Pin Usage Summary</div>
+  <table>
+    <tr><th>Port</th><th>Pins</th><th>Function</th><th>Status</th></tr>
+    <tr><td>S1 (XY)</td><td class="port">PC14, PC13, PE6, PD6, PC15</td><td class="used">stepper_x (B1) + TMC5160 + Sensorless X</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S2 (XY)</td><td class="port">PE5, PE4, PE3, PD5, PF0</td><td class="used">stepper_y (A1) + TMC5160 + Sensorless Y</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S3 (XY)</td><td class="port">PE2, PE1, PE0, PD4</td><td class="used">stepper_x1 (B2 AWD) + TMC5160</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S3 endstop</td><td class="port">PF1</td><td class="avail">Unused (Synced to stepper_x)</td><td><span class="status-badge badge-avail">Spare</span></td></tr>
+    <tr><td>S4 (XY)</td><td class="port">PB9, PB8, PB7, PD3</td><td class="used">stepper_y1 (A2 AWD) + TMC5160</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S4 endstop</td><td class="port">PF2</td><td class="avail">Unused (Synced to stepper_y)</td><td><span class="status-badge badge-avail">Spare</span></td></tr>
+    <tr><td>S5 (Z)</td><td class="port">PG9, PG10, PG13, PD2</td><td class="used">stepper_z (Z0) + TMC5160</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S5 endstop</td><td class="port">PF3</td><td class="used">SexBolt [tools_calibrate] ^!PF3 (NC Inverted)</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S6 (Z)</td><td class="port">PG11, PD7, PG12, PA15</td><td class="used">stepper_z1 (Z1) + TMC5160</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S6 endstop</td><td class="port">PF4</td><td class="used">Physical Z-Max Endstop (^PF4, Upper Chamber)</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S7 (Z)</td><td class="port">PB4, PB3, PB5, PA9</td><td class="used">stepper_z2 (Z2) + TMC5160</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>S8 (Z)</td><td class="port">PG15, PB6, PG14, PA10</td><td class="used">stepper_z3 (Z3) + TMC5160</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>SPI Bus</td><td class="port">PC6, PC7, PC8</td><td class="used">TMC5160 x8 Shared SPI</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>BED-OUT</td><td class="port">PF5</td><td class="used">Heated Bed SSR</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>HE0~HE3</td><td class="port">PF6, PF7, PF9, PF8</td><td class="avail">Unused (Hotends -> SHT36 V3)</td><td><span class="status-badge badge-avail">Spare x4</span></td></tr>
+    <tr><td>THB</td><td class="port">PB0</td><td class="used">Bed Thermistor</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>TH0</td><td class="port">PB1</td><td class="used">Chamber Temperature Sensor</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>TH1~TH3</td><td class="port">PC5, PC4, PA7</td><td class="avail">Unused (Thermistors -> SHT36 V3)</td><td><span class="status-badge badge-avail">Spare x3</span></td></tr>
+    <tr><td>FAN0~1</td><td class="port">PA0, PA1</td><td class="used">Electronics Bay Fans 1 & 2</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>FAN2</td><td class="port">PA2</td><td class="used">Chamber Exhaust Fan</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>FAN3</td><td class="port">PA3</td><td class="used">Nevermore Filter Fans x3 Parallel</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>FAN4~7</td><td class="port">PA4, PA5, PA6, PE8</td><td class="avail">Unused (FAN6/7 4-Pin PWM)</td><td><span class="status-badge badge-avail">Spare x4</span></td></tr>
+    <tr><td>SERVO</td><td class="port">PE7</td><td class="used">Gantry / Leafcutter Servo</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>BLTouch</td><td class="port">PE9, PG1</td><td class="avail">Unused (Eddy Duo = USB)</td><td><span class="status-badge badge-avail">Spare</span></td></tr>
+    <tr><td>Probe</td><td class="port">PD11</td><td class="avail">Unused</td><td><span class="status-badge badge-avail">Spare</span></td></tr>
+    <tr><td>Neopixel 1</td><td class="port">PF12</td><td class="used">Chamber Lighting WS2812B x30</td><td><span class="status-badge badge-active">In Use</span></td></tr>
+    <tr><td>Neopixel 2</td><td class="port">PF11</td><td class="avail">Spare LED Port</td><td><span class="status-badge badge-avail">Spare</span></td></tr>
+    <tr><td>PS-ON</td><td class="port">PD10</td><td class="avail">Unused</td><td><span class="status-badge badge-avail">Spare</span></td></tr>
+    <tr><td>EXP1+EXP2</td><td class="port">(Multiple)</td><td class="avail">Unused (No Display Connected)</td><td><span class="status-badge badge-avail">Spare</span></td></tr>
+  </table>
+</div>
+
+<!-- ===== System Architecture ===== -->
+<div class="full-width flow-section">
+  <div class="flow-title">Overall System Architecture — Multi-MCU Topology</div>
+  <div class="flow-diagram">
+                              <span class="h-green">Raspberry Pi 5</span>
+                   ┌──────────────┼──────────────┐
+                   │              │              │
+              <span class="h-yellow">USB</span>           <span class="h-yellow">USB</span>          <span class="h-yellow">USB</span>
+                   │              │              │
+          ┌────────┴────────┐    │    ┌─────────┴─────────┐
+          │  <span class="h-red">BTT Kraken V1.0</span>  │    │    │  <span class="h-blue">BTT Octopus V1.1</span>  │
+          │  STM32H723       │    │    │  STM32F446         │
+          │  [mcu]           │    │    │  [mcu octopus]     │
+          │                  │    │    │                    │
+          │  S1-S4: XY AWD   │    │    │  MOTOR 0-4:        │
+          │  S5-S8: Z ×4     │    │    │   BoxTurtle Feeders x5 │
+          │  8× TMC5160 SPI  │    │    │   5× TMC2209 UART  │
+          │                  │    │    │                    │
+          │  BED-OUT: Bed SSR  │   │    │  STOP 0-4: prep ×5 │
+          │  THB: Bed Therm     │    │    │  STOP 5-7: hub ×3  │
+          │  TH0: Chamber Temp  │    │    │  EXP2: hub ×2      │
+          │                  │    │    │                    │
+          │  FAN0-3: Elec Bay   │    │    │  MCU Temp Monitor    │
+          │  Exhaust/Filter          │    │    └────────────────────┘
+          │                  │    │
+          │  SERVO: GantrySrv │    │    ┌─────────────────────┐
+          │  NEO1: ChamberLED │    ├────│  <span class="h-orange">Eddy Duo</span> (RP2040)   │
+          │  PF3: SexBolt       │    │    │  [mcu btt_eddy]     │
+          └──────────────────┘    │    │  Probe + Temp Comp    │
+                                  │    └─────────────────────┘
+                                  │
+                            ┌─────┴──────┐
+                            │ <span class="h-purple">Fly UTOC-3</span>  │
+                            │ USB → CAN   │
+                            └──────┬──────┘
+                                   │ <span class="h-purple">CAN Bus</span>
+                   ┌───────┬───────┼───────┬───────┐
+                   │       │       │       │       │
+               ┌───┴──┐┌──┴───┐┌──┴───┐┌──┴───┐┌──┴───┐
+               │ <span class="h-red">SHT0</span> ││ <span class="h-red">SHT1</span> ││ <span class="h-red">SHT2</span> ││ <span class="h-red">SHT3</span> ││ <span class="h-red">SHT4</span> │
+               │ T0   ││ T1   ││ T2   ││ T3   ││ T4   │
+               │ G2SA ││ G2SA ││ G2SA ││ G2SA ││ G2SA │
+               │Htr+Fan││Htr+Fan││Htr+Fan││Htr+Fan││Htr+Fan│
+               │Sensx2 ││Sensx2 ││Sensx2 ││Sensx2 ││Sensx2 │
+               └──────┘└──────┘└──────┘└──────┘└──────┘
+  </div>
+</div>
+
+<!-- ===== Legend ===== -->
+<div class="full-width legend">
+  <div class="legend-title">Legend</div>
+  <div class="legend-grid">
+    <div class="legend-item"><div class="legend-color" style="background:#7fff7f"></div>Motor Control Pins (Step/Dir/Enable)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#a29bfe"></div>SPI Bus (CS/SCLK/MOSI/MISO)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#ff9f43"></div>Sensors / Sensorless Homing</div>
+    <div class="legend-item"><div class="legend-color" style="background:#fd79a8"></div>Heater Outputs</div>
+    <div class="legend-item"><div class="legend-color" style="background:#74b9ff"></div>Fan Control</div>
+    <div class="legend-item"><div class="legend-color" style="background:#55efc4"></div>Neopixel LED</div>
+    <div class="legend-item"><div class="legend-color" style="background:#fdcb6e"></div>Servo Motor</div>
+    <div class="legend-item"><div class="legend-color" style="background:#e17055"></div>Calibration (SexBolt)</div>
+    <div class="legend-item"><div class="legend-color" style="background:#ffd700"></div>STM32 Pin Number</div>
+    <div class="legend-item"><div class="legend-color" style="background:#636e72"></div>Unused / Spare Pins</div>
+  </div>
+</div>
+
+<div class="full-width note">
+  Voron 2.4 350mm AWD + 5-Tool StealthChanger · Official Pinout Reference: <a href="https://github.com/bigtreetech/BIGTREETECH-Kraken/blob/master/Firmware/generic-bigtreetech-kraken.cfg" style="color:#00d4ff">generic-bigtreetech-kraken.cfg</a> · <a href="https://global.bttwiki.com/Kraken.html" style="color:#00d4ff">BTT Wiki</a><br>
+  Kraken V1.0 Official Pinout: S1-S4 Rsense 0.050 ohm / S5-S8 Rsense 0.075 ohm · All 8 stepper slots used (4 XY AWD + 4 Z) · Hotend I/O handled by SHT36 V3 CAN toolboards
+</div>
+
+</body>
+</html>

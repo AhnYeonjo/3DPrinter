@@ -1,0 +1,21 @@
+[Unit]
+Description=3DOS — Multi-Tool 3D Printer Control Layer
+After=network-online.target moonraker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=esahn
+WorkingDirectory=/home/esahn/3dos
+Environment=HOST=127.0.0.1
+Environment=PORT=8088
+Environment=MOONRAKER_URL=http://127.0.0.1:7125
+Environment=KLIPPER_CONFIG_DIR=/home/esahn/printer_data/config
+# Un-comment and set a secret token if exposing outside localhost:
+# Environment=API_TOKEN=change-me
+ExecStart=/usr/bin/python3 /home/esahn/3dos/server.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

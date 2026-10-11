@@ -1,0 +1,12 @@
+[
+  {
+    "id": "cam0",
+    "label": "Shuttle Cam",
+    "url": "http://100.123.133.54:8080/?action=stream"
+  },
+  {
+    "id": "cam1",
+    "label": "Chamber Cam",
+    "url": "http://100.123.133.54:8081/?action=stream"
+  }
+]

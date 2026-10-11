@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>3DOS Touch</title>
+<style>
+  /* KlipperScreen replacement — Pi local touchscreen (recommended 1024x600). Large touch targets. */
+  :root{--bg:#0b0e14;--panel:#161b22;--line:#2a3140;--txt:#e6edf3;--dim:#8b949e;
+        --accent:#3fb950;--accent2:#58a6ff;--blue:#4aa3f0;--pink:#ff2d7e;--warn:#d29922;--danger:#f85149;--ok:#3fb950}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100vh}
+  .top{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .top h1{font-size:20px;margin:0}.top h1 b{color:var(--accent)}
+  .stat{display:flex;gap:18px;font-size:15px;color:var(--dim)}
+  .stat b{color:var(--txt)}
+  .estop{margin-left:auto;background:var(--danger);color:#fff;border:none;border-radius:10px;
+         padding:11px 18px;font-size:16px;font-weight:700}
+  .body{flex:1;display:flex;min-height:0}
+  .tabs{display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line);width:120px}
+  .tabs button{background:none;border:none;color:var(--dim);padding:18px 8px;font-size:15px;border-left:3px solid transparent}
+  .tabs button.on{color:var(--accent);border-left-color:var(--accent);background:#11161e}
+  .view{flex:1;padding:16px;overflow:auto;display:flex;flex-direction:column}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid.tools{grid-template-columns:repeat(3,1fr)}
+  .big{background:var(--panel);border:1px solid var(--line);border-radius:14px;color:var(--txt);
+       font-size:17px;padding:22px 10px;text-align:center;min-height:74px}
+  .big:active{border-color:var(--accent2)}
+  .big.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .big small{display:block;color:var(--dim);font-size:12px;margin-top:5px}
+  .big.green{background:#0f1a12;border-color:var(--accent)}
+  .big.warn{background:#1d1a10;border-color:var(--warn)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px 16px;font-size:15px}
+  .seg button.on{background:var(--accent);color:#08130b;border-color:var(--accent)}
+  h3{margin:4px 0 12px;font-size:14px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+  .mcat h4{color:var(--accent2);font-size:13px;margin:14px 0 8px}
+  #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--panel);
+         border:1px solid var(--accent);padding:12px 22px;border-radius:10px;font-size:15px;opacity:0;transition:.2s}
+  #toast.on{opacity:1}
+  .dx{background:#1d1a10;border:1px solid var(--warn);border-radius:12px;padding:16px;font-size:15px;line-height:1.6}
+  .dx.safe{background:#0f1a12;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <h1>3<b>DOS</b></h1>
+    <div class="stat">
+      <span>tool <b id="s_tool">—</b></span>
+      <span>nozzle <b id="s_noz">—</b></span>
+      <span>bed <b id="s_bed">—</b></span>
+      <span>state <b id="s_state">—</b></span>
+    </div>
+    <button class="estop" onclick="estop()">■ STOP</button>
+  </div>
+  <div class="body">
+    <div class="tabs" id="tabs"></div>
+    <div class="view" id="view"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let TOOLS=[], MACROS={groups:[]}, MAT=[], cur="home", filTool=0, filMat="PLA";
+const TOKEN = document.querySelector('meta[name="api-token"]')?.content;
+async function api(p,o={}){
+  if(TOKEN){ o.headers=o.headers||{}; o.headers['Authorization']='Bearer '+TOKEN; }
+  o.cache = 'no-store';
+  try {
+    const r=await fetch(p,o);
+    if(!r.ok) throw 0;
+    return await r.json();
+  } catch(e) {
+    return {ok:false, detail:"offline", sent:false};
+  }
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600);}
+
+const TABS=[["home","Home"],["tools","Tools"],["filament","Filament"],["network","Network"],
+            ["files","Files"],["history","History"],["bedmesh","Bed Mesh"],
+            ["macros","Macros"],["recover","Recover"],["console","Console"]];
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<button class="${k===cur?'on':''}" onclick="go('${k}')">${l}</button>`).join('');
+}
+function go(k){cur=k;renderTabs();render();}
+
+async function boot(){
+  const st=await api('/api/state'); TOOLS=st.tools;
+  const f=await api('/api/filament'); MAT=f.materials;
+  MACROS=await api('/api/macros');
+  const filesR = await api('/api/files');
+  if(filesR && filesR.files) FILES = filesR.files;
+  renderTabs(); render(); poll(); setInterval(poll,3000);
+}
+async function poll(){
+  const p=await api('/api/printer');
+  const fstate=await api('/api/filament/state');
+  if(fstate && Object.keys(fstate).length) {
+    FIL = fstate;
+    if(cur==="filament"){ const el=document.getElementById('filState'); if(el) el.innerHTML=filStateHtml(); }
+  }
+  if(cur==="network"){ NET=await api('/api/network'); render(); }
+  pollConsole();
+  const set=(id,v)=>document.getElementById(id).textContent=v;
+  if(p.ok && p.data && p.data.result && p.data.result.status){
+    const r=p.data.result.status||{};
+    set('s_tool', activeTool());
+    set('s_noz', (r.extruder?.temperature?.toFixed?.(0)||'—')+'°');
+    set('s_bed', (r.heater_bed?.temperature?.toFixed?.(0)||'—')+'°');
+    set('s_state', r.print_stats?.state||'ready');
+  }else{ set('s_state','offline (dry-run)'); set('s_tool',activeTool()); }
+}
+let ACTIVE=0;
+let FIL={};
+function activeTool(){return 'T'+ACTIVE;}
+
+function render(){
+  const v=document.getElementById('view');
+  if(cur==="home") return v.innerHTML=homeView();
+  if(cur==="tools") return v.innerHTML=toolsView();
+  if(cur==="filament") return v.innerHTML=filView();
+  if(cur==="network") return v.innerHTML=networkView();
+  if(cur==="files") { v.innerHTML = '<h3>Files</h3><div style="color:var(--dim)">Loading...</div>'; filesView().then(html => { if(cur==="files") v.innerHTML = html; }); return; }
+  if(cur==="history") { v.innerHTML = '<h3>History</h3><div style="color:var(--dim)">Loading...</div>'; historyView().then(html => { if(cur==="history") v.innerHTML = html; }); return; }
+  if(cur==="bedmesh") { v.innerHTML = '<h3>Bed Mesh</h3><div style="color:var(--dim)">Loading...</div>'; bedmeshView().then(html => { if(cur==="bedmesh") v.innerHTML = html; }); return; }
+  if(cur==="toolcal") { v.innerHTML = '<h3>Tool Offsets</h3><div style="color:var(--dim)">Loading...</div>'; toolOffsetWizard().then(html => { if(cur==="toolcal") v.innerHTML = html; }); return; }
+  if(cur==="shapercal") { v.innerHTML = '<h3>Input Shaper</h3><div style="color:var(--dim)">Loading...</div>'; shaperWizard().then(html => { if(cur==="shapercal") v.innerHTML = html; }); return; }
+  if(cur==="macros") return v.innerHTML=macroView();
+  if(cur==="recover") return v.innerHTML='<h3>MCU diagnose</h3><div class="grid"><button class="big warn" onclick="recover()">⚕ Diagnose & recover</button></div><div id="dx" style="margin-top:14px"></div>';
+  if(cur==="console") return v.innerHTML=consoleView();
+}
+
+let FILES=[], fileSel=null, fileMeta=null;
+
+async function filesView(){
+  const list = FILES.map(f=>`
+    <button class="big ${f.path===fileSel?'active':''}" style="text-align:left;width:100%"
+      onclick="pickFile('${escq(f.path)}')">📄 ${f.path}
+      <small>${(f.size/1048576).toFixed(1)}MB</small></button>`).join('');
+  let detail = '';
+  if(fileSel && fileMeta){
+    const m=fileMeta, thumb=m.thumbnails?.[0];
+    const eta=m.estimated_time?Math.round(m.estimated_time/60)+'m':'—';
+    detail = `<div class="dx" style="margin-top:12px">
+      ${thumb?`<img src="/api/thumb?path=${encodeURIComponent(thumb.url)}" style="max-width:160px;border-radius:8px;display:block;margin:0 auto 10px">`:''}
+      <div class="row"><span style="color:var(--dim)">Est. Time</span><b>${eta}</b></div>
+      <div class="row"><span style="color:var(--dim)">Filament</span><b>${m.filament_weight_g?Math.round(m.filament_weight_g)+'g':'—'}</b></div>
+      <div class="row"><span style="color:var(--dim)">Layers</span><b>${m.layer_count||'—'}</b></div>
+      ${m.tools?.length?`<div class="row"><span style="color:var(--dim)">Tools Used</span><b>${m.tools.map(t=>'T'+t).join(', ')}</b></div>`:''}
+      <button class="big green" style="width:100%;margin-top:10px" onclick="startPrint()">▶ Start Print</button>
+    </div>`;
+  }
+  return `<h3>Files</h3>
+    <div class="row"><span style="color:var(--dim)">G-code Files</span>
+      <button class="big" onclick="loadFiles()">🔄</button></div>
+    <div class="grid" style="grid-template-columns:1fr;gap:6px">${list||'Loading...'}</div>
+    ${detail}`;
+}
+async function loadFiles(){ const r=await api('/api/files'); FILES=r.files||[]; render(); }
+async function pickFile(p){ fileSel=p; fileMeta=null; render();
+  const r=await api('/api/files/meta?filename='+encodeURIComponent(p)); fileMeta=r; render(); }
+async function startPrint(){
+  if(!confirm('Start printing this file?\\n'+fileSel)) return;
+  const r=await api('/api/print/start',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({filename:fileSel})});
+  toast(r.ok?'Print started':'Failed: '+(r.detail||''));
+}
+
+async function historyView(){
+  const t=await api('/api/history/totals'), h=await api('/api/history'), ts=await api('/api/history/tools');
+  const rows=(h.jobs||[]).map(j=>`<div class="row">
+    <span style="color:${j.status==='completed'?'var(--ok)':'var(--danger)'}">${j.filename}</span>
+    <b>${Math.round((j.print_duration||0)/60)}m</b></div>`).join('');
+  const tools=Object.entries(ts.tools||{}).map(([k,v])=>`<div class="row">
+    <span>T${k}</span><b>${Math.round((v.active_s||0)/3600)}h · ${v.changes||0}x</b></div>`).join('');
+  return `<h3>History</h3>
+    <div class="dx">
+      <div class="row"><span style="color:var(--dim)">Success Rate</span><b>${t.success_rate??'—'}%</b></div>
+      <div class="row"><span style="color:var(--dim)">Total Print Time</span><b>${Math.round((t.total_print_time||0)/3600)}h</b></div>
+      <div class="row"><span style="color:var(--dim)">Total Filament</span><b>${Math.round((t.total_filament||0)/1000)}m</b></div>
+    </div>
+    <h4 style="margin:12px 0 6px">Recent Prints</h4>${rows||'—'}
+    <h4 style="margin:12px 0 6px">Per-Tool Usage</h4>${tools||'No data'}`;
+}
+
+async function bedmeshView(){
+  const r=await api('/api/bedmesh'); const M=r.matrix||[];
+  if(!M.length) return `<h3>Bed Mesh</h3><div style="color:var(--dim)">No mesh data — run BED_MESH_CALIBRATE first</div>`;
+  const flat=M.flat(); const lo=Math.min(...flat), hi=Math.max(...flat), rng=(hi-lo)||1;
+  const color=z=>{ const p=(z-lo)/rng;   // 0=low (blue) 1=high (red)
+    const r_=Math.round(255*Math.min(1,p*2)), b_=Math.round(255*Math.min(1,(1-p)*2));
+    return `rgb(\${r_},\${Math.round(180*(1-Math.abs(p-.5)*2))},\${b_})`; };
+  const rows=M.length, cols=M[0].length, cell=Math.floor(320/cols);
+  let svg=`<svg viewBox="0 0 \${cols*cell} \${rows*cell}" style="width:100%;max-width:360px;margin:auto;display:block;background:#1c1c24;border-radius:10px">`;
+  M.forEach((row,y)=> row.forEach((z,x)=>{
+    svg+=`<rect x="\${x*cell}" y="\${(rows-1-y)*cell}" width="\${cell}" height="\${cell}" fill="\${color(z)}"/>
+      <text x="\${x*cell+cell/2}" y="\${(rows-1-y)*cell+cell/2}" font-size="9" fill="#fff" text-anchor="middle" dy="3">\${z.toFixed(2)}</text>`;
+  }));
+  svg+=`</svg>`;
+  return `<h3>Bed Mesh</h3>
+    <div style="color:var(--dim);font-size:12px;text-align:center;margin-bottom:6px">
+      Range \${((hi-lo)).toFixed(3)}mm (Blue=Low, Red=High)</div>\${svg}`;
+}
+
+function homeView(){
+  return `<h3>Quick</h3><div class="grid">
+    <button class="big" onclick="macro('QUAD_GANTRY_LEVEL')">QGL</button>
+    <button class="big" onclick="macro('G28')">Home All</button>
+    <button class="big" onclick="macro('BED_MESH_CALIBRATE')">Bed Mesh</button>
+    <button class="big" onclick="go('toolcal')">Tool Offsets</button>
+    <button class="big" onclick="go('shapercal')">Input Shaper</button>
+    <button class="big warn" onclick="macro('COOLDOWN_IDLE_TOOLS')">Cooldown</button>
+  </div>`;
+}
+function toolsView(){
+  return `<h3>Select tool</h3><div class="grid tools">`+TOOLS.map(t=>
+    `<button class="big ${t.tool_number===ACTIVE?'active':''}" onclick="changeTool(${t.tool_number})">T${t.tool_number}<small>${t.board_type}</small></button>`).join('')+`</div>`;
+}
+function filView(){
+    return `<h3>Filament</h3>
+   <div class="row"><span style="color:var(--dim)">Tool</span><div class="seg" id="filT">`+
+     TOOLS.map(t=>`<button class="${t.tool_number===filTool?'on':''}" onclick="setFT(${t.tool_number})">T${t.tool_number}</button>`).join('')+`</div></div>
+   <div id="filState">${filStateHtml()}</div>
+   <div class="row"><span style="color:var(--dim)">Material</span><div class="seg" id="filM">`+
+     MAT.map(m=>`<button class="${m===filMat?'on':''}" onclick="setFM('${m}')">${m}</button>`).join('')+`</div></div>
+   <div class="grid">
+     <button class="big green" onclick="fil('load')">⭳ Load</button>
+     <button class="big" onclick="fil('unload')">⭱ Unload</button>
+     <button class="big" onclick="fil('purge')">Purge</button>
+     <button class="big" onclick="fil('confirm')">Confirm</button>
+     <button class="big warn" onclick="fil('cancel')">Cancel</button>
+   </div>`;
+}
+function filStateHtml(){
+  const f=FIL[filTool]||{sensor_entry:false,sensor_toolhead:false,sensor_clog:false};
+  const gy='var(--dim)';
+  const cToolhead=(v)=> v?'var(--pink)':gy;
+  const cEntry   =(v)=> v?'var(--blue)':gy;
+  const isClog=(f.present===true)&&(f.sensor_clog===false);
+  const cClog = isClog?'var(--danger)':gy;
+  const svgEntry='<svg viewBox="0 0 16 16" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v6"/><path d="M5.5 6 8 8.5 10.5 6"/><path d="M3.5 12.5h9"/></svg>';
+  const svgNozzle='<svg viewBox="0 0 16 16" width="36" height="36" fill="currentColor"><path d="M5 3h6v4l-3 6-3-6z"/></svg>';
+  const svgClog='<svg viewBox="0 0 16 16" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="4"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/></svg>';
+  return `<div style="display:flex;gap:12px;margin:12px 0;background:#0b0e14;padding:12px;border-radius:8px">
+    <div style="flex:1;text-align:center;color:${cEntry(f.sensor_entry)}">${svgEntry}<br><small>Entry</small></div>
+    <div style="flex:1;text-align:center;color:${cToolhead(f.sensor_toolhead)}">${svgNozzle}<br><small>Toolhead</small></div>
+    <div style="flex:1;text-align:center;color:${cClog}">${svgClog}<br><small>Clog</small></div>
+  </div>`;
+}
+
+function macroView(){
+  return MACROS.groups.map(g=>`<div class="mcat"><h4>${g.category}</h4><div class="grid">`+
+    g.items.map(it=>`<button class="big" onclick="macro('${it.name}')" style="font-size:14px">${it.name}</button>`).join('')+
+    `</div></div>`).join('');
+}
+function consoleView(){
+  return `<div style="display:flex;flex-direction:column;height:100%">
+    <div id="tcon_log" style="flex:1;overflow-y:auto;background:#0e1116;padding:12px;font-family:ui-monospace,monospace;font-size:14px;border:1px solid var(--line);border-radius:10px 10px 0 0"></div>
+    <div style="display:flex;gap:8px;padding:12px;background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 10px 10px">
+      <input type="text" id="tcon_in" style="flex:1;background:#0b0e14;border:1px solid var(--line);color:var(--txt);padding:12px;border-radius:8px;font-size:16px" placeholder="Send G-code..." onkeydown="if(event.key==='Enter')sendConIn()">
+      <button style="background:var(--accent);color:#08130b;border:none;padding:0 24px;border-radius:8px;font-size:16px;font-weight:600" onclick="sendConIn()">Send</button>
+    </div>
+  </div>`;
+}
+
+function setFT(n){filTool=n;render();}
+function setFM(m){filMat=m;render();}
+async function fil(a){const r=await api('/api/filament/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tool:filTool,action:a,material:filMat})});toast(a+' T'+filTool);}
+async function changeTool(n){await api('/api/toolchange',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:n,execute:true})});ACTIVE=n;render();toast('→ T'+n);}
+async function macro(name){const r=await api('/api/macros/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name})});toast(name);}
+async function estop(){await api('/api/gcode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script:'M112'})});toast('EMERGENCY STOP');}
+async function recover(){
+  const r=await api('/api/recover',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({error:'Lost communication with MCU SHT3'})});
+  const dx=r.diagnosis;
+  document.getElementById('dx').innerHTML=`<div class="dx ${dx.auto_restart_safe?'safe':''}">
+    <b>${dx.cause}</b> — ${dx.cause_text}<br>offline ${JSON.stringify(dx.offline_tools)}<br>
+    ${dx.recommended_fix}<br>${dx.auto_restart_safe?'✅ Auto-restart safe':'⚠ Inspect hardware first'}</div>`;
+  toast('Diagnosis: '+dx.cause);
+}
+
+let lastConTime = 0;
+async function pollConsole(){
+  if(cur !== 'console') return;
+  const r = await api('/api/console');
+  if(!r.ok || !r.data || !r.data.result) return;
+  const logs = r.data.result.gcode_store || [];
+  let html = '';
+  let added = false;
+  logs.forEach(l => {
+    if(l.time <= lastConTime) return;
+    lastConTime = Math.max(lastConTime, l.time);
+    const msg = l.message;
+    if(msg.startsWith('B:') || msg.startsWith('T0:')) return;
+    let col = '#cfcfd6', pfx = '';
+    if(l.type === 'command') { col = '#58a6ff'; pfx = '&gt; '; }
+    else if(msg.startsWith('!!')) { col = '#f85149'; }
+    else if(msg.startsWith('//')) { col = '#d29922'; }
+    html += `<div style="color:${col}; margin-bottom:4px">${pfx}${msg.replace(/</g,'&lt;')}</div>`;
+    added = true;
+  });
+  if(added) {
+    const el = document.getElementById('tcon_log');
+    if(!el) return;
+    const isBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+    el.innerHTML += html;
+    if(isBottom) el.scrollTop = el.scrollHeight;
+  }
+}
+async function sendConIn(){
+  const v = document.getElementById('tcon_in')?.value.trim();
+  if(!v) return;
+  document.getElementById('tcon_in').value = '';
+  await api('/api/gcode',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({script:v})});
+}
+
+let NET={interfaces:[],wifi:null,hostname:'',nmcli:false}, WIFILIST=[];
+let netSel={ssid:'', device:''};
+
+function networkView(){
+  const n=NET;
+  const ifRows = n.interfaces.map(i=>`
+    <div class="row"><span style="color:var(--dim)">${i.type==='wifi'?'📶':'🔌'} ${i.device}</span>
+      <div style="text-align:right">
+        <div>${i.ip||'—'}</div>
+        <div style="color:var(--dim);font-size:12px">${i.state}${i.gateway?' · GW '+i.gateway:''}</div>
+      </div></div>`).join('');
+  const wifiNow = n.wifi ? `${n.wifi.ssid} (${n.wifi.signal}%)` : 'Not connected';
+  const list = WIFILIST.map(w=>`
+    <button class="big ${w.ssid===netSel.ssid?'active':''}" style="text-align:left;width:100%"
+      onclick="pickWifi('${escq(w.ssid)}',${w.secure})">
+      ${w.secure?'🔒':'📖'} ${w.ssid} <small>${w.signal}%</small></button>`).join('');
+  return `<h3>Network</h3>
+   <div class="dx" style="margin-bottom:12px">
+     <div class="row"><span style="color:var(--dim)">Hostname</span>
+       <b style="flex:1">${n.hostname||'—'}</b>
+       <button class="big" style="padding:6px 12px;font-size:13px" onclick="setHostname()">Change</button>
+     </div>
+     ${ifRows}
+     <div class="row"><span style="color:var(--dim)">WiFi</span><b>${wifiNow}</b></div>
+     ${n.nmcli?'':'<div style="color:var(--warn)">nmcli unavailable — read-only</div>'}
+   </div>
+   <div class="row"><span style="color:var(--dim)">Wi-Fi Scan</span>
+     <button class="big" onclick="scanWifi()" style="padding:10px 16px;font-size:15px">🔄 Scan</button></div>
+   <div class="grid" style="grid-template-columns:1fr;gap:6px">${list||'<div style="color:var(--dim);padding:8px">Tap Scan to search for nearby Wi-Fi networks</div>'}</div>
+   ${netSel.ssid?`
+   <div class="row" style="margin-top:10px">
+     <input id="wifiPsk" type="password" placeholder="Password (${escq(netSel.ssid)})"
+       style="flex:1;background:#0b0e14;border:1px solid var(--line);color:var(--txt);padding:14px;border-radius:10px;font-size:16px">
+     <button class="big green" onclick="joinWifi()" style="padding:14px 20px">Connect</button>
+   </div>`:''}
+   <div class="row" style="margin-top:14px"><span style="color:var(--dim)">IP Mode</span>
+     <div class="seg">
+       <button onclick="setIp('dhcp')">DHCP (Auto)</button>
+       <button onclick="openStaticIp()">Static IP...</button>
+     </div></div>`;
+}
+
+function escq(s){return String(s).replace(/'/g,"\\'");}
+
+async function scanWifi(){
+  toast('Scanning Wi-Fi...');
+  const r=await api('/api/network/scan');
+  WIFILIST=r.networks||[]; render();
+}
+function pickWifi(ssid,secure){
+  netSel.ssid=ssid;
+  if(!secure){ joinWifi(); return; }
+  render();
+}
+async function joinWifi(){
+  const psk=(document.getElementById('wifiPsk')||{}).value||'';
+  toast('Connecting to: '+netSel.ssid);
+  const r=await api('/api/network/wifi',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ssid:netSel.ssid,psk})});
+  toast(r.ok?'Connected: '+netSel.ssid:'Failed: '+(r.detail||''));
+  netSel.ssid=''; await refreshNet();
+}
+async function setIp(mode){
+  const dev=(NET.interfaces.find(i=>i.state==='connected')||{}).device;
+  if(!dev){toast('No active network interface');return;}
+  const r=await api('/api/network/ip',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({device:dev,mode})});
+  toast(r.ok?'IP mode changed: '+mode:'Failed: '+(r.detail||''));
+  await refreshNet();
+}
+async function openStaticIp(){
+  const dev=(NET.interfaces.find(i=>i.state==='connected')||{}).device;
+  if(!dev){toast('No active network interface');return;}
+  const ip = prompt("Enter static IP address in CIDR format (e.g. 192.168.0.50/24)\n\nNote: If not confirmed within 60 seconds, the connection will automatically revert to DHCP.");
+  if(!ip) return;
+  const ipRegex = /^(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\.(25[0-5]|2[0-4]\d|[01]?\d\d?)\/([0-9]|[12]\d|3[0-2])$/;
+  if(!ipRegex.test(ip)){ alert("Invalid CIDR format (e.g. 192.168.0.50/24)"); return; }
+  const gw = prompt("Enter gateway IP address (e.g. 192.168.0.1)");
+  if(!gw) return;
+  const dns = prompt("Enter DNS server address (e.g. 8.8.8.8)");
+  if(!dns) return;
+  
+  toast('Applying static IP...');
+  const r=await api('/api/network/ip',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({device:dev, mode:'static', address:ip, gateway:gw, dns})});
+  
+  if(r.ok){
+    alert("Static IP applied. Click OK to keep this setting (otherwise it will revert in 60 seconds).");
+    await api('/api/network/commit',{method:'POST'}); // Commit network changes to prevent auto-rollback
+    toast('Configuration saved');
+  } else {
+    toast('Failed: '+(r.detail||''));
+  }
+  await refreshNet();
+}
+async function setHostname(){
+  const cur = NET.hostname || "";
+  const name = prompt("Enter new hostname:", cur);
+  if(!name || name===cur) return;
+  toast('Updating hostname...');
+  const r=await api('/api/network/hostname',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name})});
+  toast(r.ok?'Updated':'Failed: '+(r.detail||''));
+  await refreshNet();
+}
+async function refreshNet(){ NET=await api('/api/network'); if(cur==='network') render(); }
+
+let tcalRun=false, tcalRows=[];
+async function toolOffsetWizard(){
+  return `<h3>Tool Offset Calibration</h3>
+    <div class="dx" style="margin-bottom:10px">Automatically probes T1~T5 XYZ offsets on the sexbolt sensor. Preheat and clean nozzles before running.</div>
+    <button class="big green" onclick="runToolCal()" ${tcalRun?'disabled':''}>▶ Start 6-Tool Offset Calibration</button>
+    <div id="tcalProgress" style="margin-top:12px">${tcalRows.map(r=>
+      `<div class="row"><span>T${r.tool}</span><b>X${r.x} Y${r.y} Z${r.z}</b></div>`).join('')}</div>`;
+}
+async function runToolCal(){
+  tcalRun=true; tcalRows=[]; render();
+  toast('Locating T0 reference point...');
+  const p=await api('/api/toolcal/prepare',{method:'POST'});
+  if(!p.ok){ toast('Preparation failed: '+(p.detail||'')); tcalRun=false; render(); return; }
+  for(let n=1;n<=5;n++){
+    toast(`T${n} probing offsets...`);
+    const r=await api('/api/toolcal/tool',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tool:n})});
+    if(r.ok) tcalRows.push({tool:n,x:r.offset.x,y:r.offset.y,z:r.offset.z});
+    else tcalRows.push({tool:n,x:'Failed',y:r.detail||'',z:''});
+    render();
+  }
+  await api('/api/toolcal/finish',{method:'POST'});
+  tcalRun=false; toast('Tool offset calibration complete'); render();
+}
+
+let shpRun=false, shpRows=[];
+async function shaperWizard(){
+  return `<h3>Input Shaper Calibration</h3>
+    <div class="dx" style="margin-bottom:10px">Measures resonance per toolhead and saves the recommended Input Shaper (~1 min per tool).</div>
+    <button class="big green" onclick="runShaper()" ${shpRun?'disabled':''}>▶ Start 6-Tool Shaper Calibration</button>
+    <div style="margin-top:12px">${shpRows.map(r=>`<div class="row"><span>T${r.tool}</span>
+      <b>X: ${r.x||'—'} · Y: ${r.y||'—'}</b></div>`).join('')}</div>`;
+}
+async function runShaper(){
+  shpRun=true; shpRows=[]; render();
+  for(let n=0;n<=5;n++){
+    toast(`T${n} measuring resonances (X,Y)...`);
+    const r=await api('/api/shapercal/tool',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tool:n})});
+    const fx=(r.x && r.x.ok)?`${r.x.type} ${r.x.freq}Hz`:'Failed';
+    const fy=(r.y && r.y.ok)?`${r.y.type} ${r.y.freq}Hz`:'Failed';
+    shpRows.push({tool:n,x:fx,y:fy}); render();
+  }
+  shpRun=false; toast('Input Shaper calibration complete'); render();
+}
+
+boot();
+</script>
+</body>
+</html>
